@@ -252,7 +252,7 @@ class Map:
         })
         
         self.ram.add_items({
-            'memory_resident_virus': 'A virus that stays entirely in RAM, modifying programs as they're loaded from storage.'
+            'memory_resident_virus': 'A virus that stays entirely in RAM, modifying programs as they are loaded from storage.'
         })
         
         self.bios.add_items({

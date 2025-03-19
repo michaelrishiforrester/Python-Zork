@@ -2,6 +2,222 @@ import time
 import random
 from player import Player
 from room import Room
+from map import Map
+from visualizer import ComponentVisualizer
+from minigames import CPUPipelineMinigame, MemoryHierarchyMinigame
+
+class Achievement:
+    def __init__(self, id, name, description, condition_fn, reward=None):
+        self.id = id
+        self.name = name
+        self.description = description
+        self.condition_fn = condition_fn  # Function that returns True when achieved
+        self.unlocked = False
+        self.unlock_time = None
+        self.reward = reward  # Optional reward (item, knowledge, etc.)
+
+class ProgressSystem:
+    def __init__(self, game):
+        self.game = game
+        self.achievements = []
+        self.exploration_progress = 0  # Percentage of map explored
+        self.knowledge_progress = 0    # Percentage of total knowledge gained
+        self.virus_progress = 0        # Percentage of viruses found/quarantined
+        self.total_score = 0
+        
+        # Setup achievements
+        self.setup_achievements()
+        
+    def setup_achievements(self):
+        """Define all achievements for the game"""
+        self.achievements = [
+            Achievement(
+                "first_step",
+                "First Steps",
+                "Visit your first new component after the CPU Core",
+                lambda: len([r for r in self.game.game_map.rooms.values() if r.visited]) > 1
+            ),
+            Achievement(
+                "explorer",
+                "System Explorer",
+                "Visit at least 10 different components",
+                lambda: len([r for r in self.game.game_map.rooms.values() if r.visited]) >= 10
+            ),
+            Achievement(
+                "master_explorer",
+                "System Cartographer",
+                "Visit all system components",
+                lambda: all(r.visited for r in self.game.game_map.rooms.values())
+            ),
+            Achievement(
+                "first_virus",
+                "Threat Detector",
+                "Find your first virus",
+                lambda: len(self.game.player.found_viruses) >= 1
+            ),
+            Achievement(
+                "virus_hunter",
+                "Virus Hunter",
+                "Find all viruses in the system",
+                lambda: len(self.game.player.found_viruses) >= len(self.game.viruses)
+            ),
+            Achievement(
+                "first_quarantine",
+                "Security Specialist",
+                "Successfully quarantine your first virus",
+                lambda: len(self.game.player.quarantined_viruses) >= 1
+            ),
+            Achievement(
+                "system_savior",
+                "System Savior",
+                "Quarantine all viruses and save the system",
+                lambda: len(self.game.player.quarantined_viruses) >= len(self.game.viruses)
+            ),
+            Achievement(
+                "cpu_expert",
+                "CPU Architecture Expert",
+                "Reach maximum knowledge of CPU components",
+                lambda: self.game.player.knowledge['cpu'] >= 5
+            ),
+            Achievement(
+                "memory_expert",
+                "Memory Systems Expert",
+                "Reach maximum knowledge of memory systems",
+                lambda: self.game.player.knowledge['memory'] >= 5
+            ),
+            Achievement(
+                "storage_expert",
+                "Storage Expert",
+                "Reach maximum knowledge of storage systems",
+                lambda: self.game.player.knowledge['storage'] >= 5
+            ),
+            Achievement(
+                "network_expert",
+                "Networking Expert",
+                "Reach maximum knowledge of network components",
+                lambda: self.game.player.knowledge['networking'] >= 5
+            ),
+            Achievement(
+                "security_expert",
+                "Security Expert",
+                "Reach maximum knowledge of security concepts",
+                lambda: self.game.player.knowledge['security'] >= 5
+            ),
+            Achievement(
+                "computer_scientist",
+                "Computer Scientist",
+                "Reach maximum knowledge in all areas",
+                lambda: all(level >= 5 for level in self.game.player.knowledge.values())
+            ),
+            Achievement(
+                "efficient",
+                "Efficient Operator",
+                "Complete the game in under 50 turns",
+                lambda: self.game.victory and self.game.turns < 50
+            ),
+        ]
+    
+    def update(self):
+        """
+        Update progress metrics and check for newly unlocked achievements
+        Should be called after each player action
+        """
+        # Update exploration progress
+        visited_rooms = len([r for r in self.game.game_map.rooms.values() if r.visited])
+        total_rooms = len(self.game.game_map.rooms)
+        self.exploration_progress = int((visited_rooms / total_rooms) * 100)
+        
+        # Update knowledge progress
+        current_knowledge = sum(self.game.player.knowledge.values())
+        max_knowledge = len(self.game.player.knowledge) * 5  # 5 is max level per area
+        self.knowledge_progress = int((current_knowledge / max_knowledge) * 100)
+        
+        # Update virus progress - considered 50% for finding, 50% for quarantining
+        viruses_found_pct = len(self.game.player.found_viruses) / len(self.game.viruses) * 50
+        viruses_quarantined_pct = len(self.game.player.quarantined_viruses) / len(self.game.viruses) * 50
+        self.virus_progress = int(viruses_found_pct + viruses_quarantined_pct)
+        
+        # Calculate total score
+        self.total_score = self.calculate_score()
+        
+        # Check for newly unlocked achievements
+        newly_unlocked = []
+        for achievement in self.achievements:
+            if not achievement.unlocked and achievement.condition_fn():
+                achievement.unlocked = True
+                achievement.unlock_time = self.game.turns
+                newly_unlocked.append(achievement)
+                
+                # Apply any rewards
+                if achievement.reward:
+                    self.apply_reward(achievement.reward)
+                    
+        return newly_unlocked
+    
+    def apply_reward(self, reward):
+        """Apply a reward to the player"""
+        if isinstance(reward, dict):
+            if 'item' in reward:
+                # Add an item to player inventory
+                self.game.player.items[reward['item']] = reward.get('description', 'A special item')
+            elif 'knowledge' in reward:
+                # Increase knowledge in specific area
+                area = reward['knowledge']
+                amount = reward.get('amount', 1)
+                if area in self.game.player.knowledge:
+                    self.game.player.knowledge[area] = min(5, self.game.player.knowledge[area] + amount)
+    
+    def calculate_score(self):
+        """Calculate player's score based on various factors"""
+        score = 0
+        
+        # Points for exploration
+        visited_rooms = len([r for r in self.game.game_map.rooms.values() if r.visited])
+        score += visited_rooms * 10  # 10 points per room visited
+        
+        # Points for viruses found and quarantined
+        score += len(self.game.player.found_viruses) * 50       # 50 points per virus found
+        score += len(self.game.player.quarantined_viruses) * 100  # 100 points per virus quarantined
+        
+        # Points for knowledge gained
+        knowledge_total = sum(self.game.player.knowledge.values())
+        score += knowledge_total * 20  # 20 points per knowledge level
+        
+        # Bonus for efficiency (fewer turns)
+        if self.game.victory:
+            efficiency_bonus = max(0, 500 - (self.game.turns * 5))
+            score += efficiency_bonus
+        
+        # Points for achievements
+        score += sum(100 for a in self.achievements if a.unlocked)
+        
+        return score
+    
+    def get_progress_report(self):
+        """Generate a detailed progress report for the player"""
+        report = "PROGRESS REPORT\n"
+        report += "===============\n\n"
+        
+        report += f"Exploration: {self.exploration_progress}% of system mapped\n"
+        report += f"Knowledge: {self.knowledge_progress}% of total knowledge\n"
+        report += f"Security: {self.virus_progress}% of virus threats handled\n\n"
+        
+        report += f"Current Score: {self.total_score} points\n\n"
+        
+        # List achievements
+        if any(a.unlocked for a in self.achievements):
+            report += "Achievements Unlocked:\n"
+            for achievement in sorted([a for a in self.achievements if a.unlocked], key=lambda a: a.unlock_time):
+                report += f"- {achievement.name}: {achievement.description}\n"
+        
+        # List locked achievements with hints
+        locked = [a for a in self.achievements if not a.unlocked]
+        if locked:
+            report += "\nRemaining Challenges:\n"
+            for achievement in locked:
+                report += f"- ???: {achievement.description}\n"
+        
+        return report
 
 class Game:
     def __init__(self):
@@ -9,19 +225,12 @@ class Game:
         Constructor: Create a ComputerQuest game
         Initialize the game world and components
         """
-        # Load rooms (computer components)
-        self.rooms = []
+        # Initialize computer architecture map from the Map class
+        self.game_map = Map()
+        self.game_map.setup()
         
-        # Initialize computer architecture map
-        self.init_map()
-        
-        # Create player and place at entry point (CPU Core)
-        entry_room = self.cpu_core
-        player_items = {
-            'antivirus_tool': 'A basic scanner that can detect and quarantine viruses once found.',
-            'system_manual': '# System Architecture Guide\n\nWelcome to ComputerQuest!\n\nYou are inside a computer system infected with viruses. Your mission is to locate and quarantine all viruses hidden throughout the system.\n\nBasic commands:\n-go (n/s/e/w): Move between components\n-look: Examine your surroundings\n-look [item]: Examine a specific item\n-take [item]: Add item to your inventory\n-drop [item]: Remove item from your inventory\n-inventory: List your items\n-scan: Search for viruses in current location\n-scan [item]: Check if a specific item is infected\n-quarantine [virus]: Contain a discovered virus\n-status: Check your progress\n-knowledge: View your computer architecture knowledge\n-help: Show available commands\n\nGood luck, Security Program!'
-        }
-        self.player = Player(entry_room, player_items, False, "Security Program")
+        # Get player from the map
+        self.player = self.game_map.player
         
         # Game state variables
         self.turns = 0
@@ -37,6 +246,16 @@ class Game:
             "firmware_virus", 
             "packet_sniffer_virus"
         ]
+        
+        # Initialize the progress tracking system
+        self.progress = ProgressSystem(self)
+        
+        # Initialize visualizer
+        self.visualizer = ComponentVisualizer()
+        
+        # Initialize minigame state
+        self.current_minigame = None
+        self.current_visualization = None
         
         # Print welcome message
         self.display_welcome()
@@ -76,397 +295,9 @@ class Game:
         else:
             print("\nExiting ComputerQuest. Goodbye!")
 
-    def init_map(self):
-        """
-        Initialize the computer architecture map
-        Creating all components and connections
-        """
-        # Core CPU components
-        self.cpu_core = Room(
-            "CPU Core", 
-            "You are inside the main processing core of the CPU. The environment pulses with energy as billions of instructions flow through. The air is electric with the sense of rapid calculations.", 
-            True, 
-            "001", 
-            False
-        )
-        self.cpu_core.set_specs(3, ["Instructions", "Opcodes"], 10, 2, 8)
-        
-        self.control_unit = Room(
-            "Control Unit",
-            "You stand in the control unit. This area coordinates all CPU activities, decoding instructions and directing operations. Status lights blink in complex patterns as the system processes commands.",
-            True,
-            "002",
-            False
-        )
-        self.control_unit.set_specs(3, ["Control Signals", "Instructions"], 9, 1, 8)
-        
-        self.alu = Room(
-            "Arithmetic Logic Unit",
-            "The ALU hums with computational activity. Here all calculations are performed - mathematical operations and logical comparisons. Numbers and logical values flow through circuits around you.",
-            True,
-            "003",
-            False
-        )
-        self.alu.set_specs(3, ["Operands", "Results"], 10, 1, 8)
-        
-        self.registers = Room(
-            "Registers",
-            "You're in the registers - small, lightning-fast memory units that hold data being actively processed. Each register glows with stored values, changing rapidly as new calculations occur.",
-            True,
-            "004",
-            False
-        )
-        self.registers.set_specs(3, ["Variables", "Addresses", "Flags"], 10, 3, 9)
-        
-        # Memory hierarchy
-        self.l1_cache = Room(
-            "L1 Cache",
-            "You've entered the L1 cache - the CPU's closest and fastest memory. Data moves incredibly quickly here, with frequently used instructions and data readily accessible. The space is compact and incredibly efficient.",
-            True,
-            "010",
-            False
-        )
-        self.l1_cache.set_specs(2, ["Program Code", "Data"], 9, 4, 9)
-        
-        self.l2_cache = Room(
-            "L2 Cache",
-            "The L2 cache stretches around you, larger but slightly slower than L1. It serves as the middle ground in the memory hierarchy. When the CPU can't find data in L1, it looks here next.",
-            True,
-            "011",
-            False
-        )
-        self.l2_cache.set_specs(2, ["Program Code", "Data"], 8, 5, 9)
-        
-        self.l3_cache = Room(
-            "L3 Cache",
-            "You're standing in the expansive L3 cache, the last level of cache memory before main memory. It's much larger but slower than L1 and L2. This shared cache serves all CPU cores.",
-            True,
-            "012",
-            False
-        )
-        self.l3_cache.set_specs(2, ["Program Code", "Data"], 7, 6, 9)
-        
-        self.memory_controller = Room(
-            "Memory Controller",
-            "The memory controller bustles with activity, managing the flow of data between the CPU and RAM. It orchestrates read and write operations with precise timing.",
-            True,
-            "013",
-            False
-        )
-        self.memory_controller.set_specs(2, ["Memory Addresses", "Data"], 7, 3, 8)
-        
-        self.ram = Room(
-            "RAM (Random Access Memory)",
-            "You've entered the vast expanse of RAM. Compared to the cache levels, it feels enormous but less frantic. This is where active programs and data reside while the computer is running. Unlike the CPU areas, data here persists only while power flows.",
-            True,
-            "020",
-            False
-        )
-        self.ram.set_specs(1, ["Program Code", "User Data", "System Data"], 6, 8, 7)
-        
-        # Connective architecture
-        self.system_bus = Room(
-            "System Bus",
-            "You're traveling along the system bus - the main highway of data transfer between major system components. Information packets zoom past you in all directions.",
-            True,
-            "030",
-            False
-        )
-        self.system_bus.set_specs(1, ["Data Packets", "Control Signals", "Addresses"], 8, 5, 7)
-        
-        self.pci_bus = Room(
-            "PCI Express Bus",
-            "You're on the PCI Express bus, a high-speed expansion bus that connects the system to peripheral components. The bandwidth here is impressive, with data flowing in parallel lanes.",
-            True,
-            "031",
-            False
-        )
-        self.pci_bus.set_specs(1, ["Device Data", "Control Signals"], 8, 6, 7)
-        
-        self.io_controller = Room(
-            "I/O Controller Hub",
-            "You're in the I/O controller hub, managing connections to all external devices. This bustling area handles data flow to and from storage devices, network interfaces, and user input devices.",
-            True,
-            "032",
-            False
-        )
-        self.io_controller.set_specs(1, ["Device Data", "Control Signals"], 6, 4, 7)
-        
-        # Storage and specialized components
-        self.storage_controller = Room(
-            "Storage Controller",
-            "The storage controller manages data flow between the system and persistent storage devices. It translates system requests into the specific protocols needed by different storage media.",
-            True,
-            "040",
-            False
-        )
-        self.storage_controller.set_specs(1, ["File Data", "Storage Commands"], 6, 4, 7)
-        
-        self.ssd = Room(
-            "Solid State Drive",
-            "You've entered the solid state drive. Unlike the constantly changing memory areas, data here is organized in flash memory cells that retain information even when power is off. The environment is silent but incredibly efficient.",
-            True,
-            "041",
-            False
-        )
-        self.ssd.set_specs(1, ["Files", "Boot Data", "Application Data"], 6, 9, 8)
-        
-        self.hdd = Room(
-            "Hard Disk Drive",
-            "You stand among the mechanical structures of the hard disk drive. Here, data is stored magnetically on spinning platters, accessed by moving read/write heads. You can hear the mechanical movements as data is accessed.",
-            True,
-            "042",
-            False
-        )
-        self.hdd.set_specs(1, ["Files", "Archives", "Backups"], 3, 10, 6)
-        
-        self.gpu = Room(
-            "Graphics Processing Unit",
-            "The GPU is a massive parallel processing environment. Thousands of small cores work simultaneously on graphics rendering tasks. Visual data streams all around you, being transformed from mathematical descriptions into rendered images.",
-            True,
-            "050",
-            False
-        )
-        self.gpu.set_specs(2, ["Textures", "Shaders", "Vertex Data"], 9, 7, 7)
-        
-        self.vram = Room(
-            "Video Memory (VRAM)",
-            "You're inside the video memory, where frame buffers and texture data reside. This specialized memory is optimized for the parallel access patterns needed for graphics processing. The space is filled with image data in various stages of rendering.",
-            True,
-            "051",
-            False
-        )
-        self.vram.set_specs(2, ["Frame Buffers", "Textures"], 8, 7, 7)
-        
-        self.network_interface = Room(
-            "Network Interface",
-            "You've reached the network interface, the gateway between this computer and the outside world. Data packets are assembled and disassembled here, following precise networking protocols.",
-            True,
-            "060",
-            False
-        )
-        self.network_interface.set_specs(1, ["Network Packets", "Headers", "Payload Data"], 7, 5, 7)
-        
-        self.bios = Room(
-            "BIOS/UEFI Firmware",
-            "You're in the BIOS/UEFI firmware environment, the fundamental system that initializes hardware during boot. This ancient-seeming area contains the basic instructions that bring the computer to life. Odd symbols and fundamental commands are etched into the walls.",
-            True,
-            "070",
-            False
-        )
-        self.bios.set_specs(3, ["Boot Instructions", "Hardware Configuration"], 5, 3, 9)
-        
-        # Virtual memory and OS components
-        self.virtual_memory = Room(
-            "Virtual Memory Manager",
-            "You're in the virtual memory management system. Here, the illusion of unlimited memory is maintained by mapping virtual addresses to physical storage. Pages of memory move between RAM and storage as needed.",
-            True,
-            "080",
-            False
-        )
-        self.virtual_memory.set_specs(2, ["Page Tables", "Memory Mappings"], 4, 8, 7)
-        
-        self.kernel = Room(
-            "Operating System Kernel",
-            "You stand in the kernel space - the core of the operating system. This protected environment controls all hardware resources and provides services to applications. The air of authority is palpable.",
-            True,
-            "090",
-            False
-        )
-        self.kernel.set_specs(3, ["System Calls", "Drivers", "Resource Allocations"], 7, 6, 9)
-        
-        # Add all rooms to master list
-        self.rooms = [
-            self.cpu_core, self.control_unit, self.alu, self.registers,
-            self.l1_cache, self.l2_cache, self.l3_cache, self.memory_controller, self.ram,
-            self.system_bus, self.pci_bus, self.io_controller,
-            self.storage_controller, self.ssd, self.hdd,
-            self.gpu, self.vram,
-            self.network_interface,
-            self.bios,
-            self.virtual_memory, self.kernel
-        ]
-        
-        # Connect all the rooms (components)
-        self.connect_components()
-        
-        # Add items and viruses to the rooms
-        self.add_items_and_viruses()
+# This method has been removed since we're now using Map class from map.py
 
-    def connect_components(self):
-        """Connect all computer architecture components"""
-        # CPU Core connections
-        self.cpu_core.connect_to(self.control_unit, 'n')
-        self.cpu_core.connect_to(self.alu, 'e')
-        self.cpu_core.connect_to(self.l1_cache, 's')
-        self.cpu_core.connect_to(self.system_bus, 'w')
-        
-        # Control Unit connections
-        self.control_unit.connect_to(self.cpu_core, 's')
-        self.control_unit.connect_to(self.registers, 'e')
-        self.control_unit.connect_to(self.alu, 'se')
-        
-        # ALU connections
-        self.alu.connect_to(self.cpu_core, 'w')
-        self.alu.connect_to(self.control_unit, 'nw')
-        
-        # Registers connections
-        self.registers.connect_to(self.control_unit, 'w')
-        self.registers.connect_to(self.l1_cache, 's')
-        
-        # Cache hierarchy connections
-        self.l1_cache.connect_to(self.cpu_core, 'n')
-        self.l1_cache.connect_to(self.registers, 'n')
-        self.l1_cache.connect_to(self.l2_cache, 's')
-        
-        self.l2_cache.connect_to(self.l1_cache, 'n')
-        self.l2_cache.connect_to(self.l3_cache, 's')
-        
-        self.l3_cache.connect_to(self.l2_cache, 'n')
-        self.l3_cache.connect_to(self.memory_controller, 's')
-        
-        # Memory controller and RAM
-        self.memory_controller.connect_to(self.l3_cache, 'n')
-        self.memory_controller.connect_to(self.ram, 's')
-        self.memory_controller.connect_to(self.system_bus, 'w')
-        
-        self.ram.connect_to(self.memory_controller, 'n')
-        self.ram.connect_to(self.virtual_memory, 'e')
-        self.ram.connect_to(self.system_bus, 'w')
-        
-        # System bus connections (central hub)
-        self.system_bus.connect_to(self.cpu_core, 'e')
-        self.system_bus.connect_to(self.memory_controller, 'e')
-        self.system_bus.connect_to(self.ram, 'e')
-        self.system_bus.connect_to(self.pci_bus, 's')
-        self.system_bus.connect_to(self.io_controller, 'w')
-        self.system_bus.connect_to(self.bios, 'n')
-        self.system_bus.connect_to(self.kernel, 'ne')
-        
-        # PCI and I/O connections
-        self.pci_bus.connect_to(self.system_bus, 'n')
-        self.pci_bus.connect_to(self.gpu, 'e')
-        
-        self.io_controller.connect_to(self.system_bus, 'e')
-        self.io_controller.connect_to(self.storage_controller, 's')
-        self.io_controller.connect_to(self.network_interface, 'w')
-        
-        # Storage connections
-        self.storage_controller.connect_to(self.io_controller, 'n')
-        self.storage_controller.connect_to(self.ssd, 'e')
-        self.storage_controller.connect_to(self.hdd, 'w')
-        self.storage_controller.connect_to(self.virtual_memory, 'ne')
-        
-        self.ssd.connect_to(self.storage_controller, 'w')
-        self.hdd.connect_to(self.storage_controller, 'e')
-        
-        # GPU and VRAM
-        self.gpu.connect_to(self.pci_bus, 'w')
-        self.gpu.connect_to(self.vram, 's')
-        
-        self.vram.connect_to(self.gpu, 'n')
-        
-        # Other connections
-        self.network_interface.connect_to(self.io_controller, 'e')
-        
-        self.virtual_memory.connect_to(self.ram, 'w')
-        self.virtual_memory.connect_to(self.storage_controller, 'sw')
-        
-        self.bios.connect_to(self.system_bus, 's')
-        
-        self.kernel.connect_to(self.system_bus, 'sw')
-
-    def add_items_and_viruses(self):
-        """
-        Add items, tools, and viruses to the computer components
-        """
-        # Tools and useful items
-        self.cpu_core.add_items({
-            'processor_manual': 'A technical document describing CPU architecture and operation. It contains information about pipelines, instruction sets, and CPU optimization.'
-        })
-        
-        self.control_unit.add_items({
-            'decoder_tool': 'An instruction decoder that can help analyze code patterns and identify suspicious operations.'
-        })
-        
-        self.registers.add_items({
-            'register_log': 'A log showing recent register state changes. Some unusual patterns might indicate malicious activity.'
-        })
-        
-        self.l1_cache.add_items({
-            'cache_analyzer': 'A tool for examining cache contents to identify unusual access patterns or hidden code.'
-        })
-        
-        self.io_controller.add_items({
-            'port_scanner': 'A device that can scan I/O ports for unauthorized data transfers or suspicious activity.'
-        })
-        
-        self.network_interface.add_items({
-            'packet_analyzer': 'A tool that can inspect network packets for malicious content or suspicious communication patterns.'
-        })
-        
-        self.hdd.add_items({
-            'disk_scanner': 'A comprehensive scanning tool for detecting file system anomalies and hidden data.'
-        })
-        
-        self.bios.add_items({
-            'firmware_validator': 'A specialized tool for verifying firmware integrity and detecting unauthorized modifications.'
-        })
-        
-        # Clues to viruses
-        self.alu.add_items({
-            'strange_calculation': 'A record of unusual calculation patterns that seem to be used for encryption. The patterns don\'t match any known legitimate applications.'
-        })
-        
-        self.l3_cache.add_items({
-            'memory_leak': 'Evidence of a program gradually consuming more memory than it should. Memory utilization graphs show irregular patterns.'
-        })
-        
-        self.system_bus.add_items({
-            'suspicious_packet': 'A data packet with an unusual destination that doesn\'t match any known system component. The header contains obscured routing information.'
-        })
-        
-        self.virtual_memory.add_items({
-            'page_fault_log': 'A log showing an unusually high number of page faults in specific memory regions. The affected areas don\'t correspond to any legitimate software.'
-        })
-        
-        self.gpu.add_items({
-            'shader_anomaly': 'A shader program with code that doesn\'t appear to be related to graphics rendering. Hidden within the complex calculations are what look like data exfiltration routines.'
-        })
-        
-        # Educational items about computer architecture
-        self.ram.add_items({
-            'memory_architecture_guide': '# Memory Hierarchy Guide\n\nRAM (Random Access Memory) is the main memory of a computer system. Unlike storage devices, RAM is volatile, meaning it loses its contents when power is removed.\n\nMemory Hierarchy:\n1. Registers (fastest, smallest)\n2. L1 Cache\n3. L2 Cache\n4. L3 Cache\n5. RAM (slower than cache, larger)\n6. Virtual Memory (uses disk space)\n7. Storage Devices (slowest, largest)\n\nThis hierarchy balances speed, size, and cost to optimize system performance.'
-        })
-        
-        self.system_bus.add_items({
-            'bus_topology_map': '# System Bus Architecture\n\nThe system bus is the main pathway for data between major computer components. It consists of:\n\n- Address Bus: Carries memory addresses\n- Data Bus: Carries actual data being processed\n- Control Bus: Carries control signals\n\nSystem buses operate at specific clock speeds and widths (like 64-bit), which determine their bandwidth and performance.'
-        })
-        
-        self.kernel.add_items({
-            'os_architecture_primer': '# Operating System Architecture\n\nThe kernel is the core of the operating system, with direct access to hardware.\n\nKernel responsibilities:\n- Process management\n- Memory management\n- Device drivers\n- System calls\n- Security enforcement\n\nUser applications request services from the kernel through system calls rather than accessing hardware directly. This provides security and abstraction.'
-        })
-        
-        # The viruses - hidden in specific locations
-        self.ssd.add_items({
-            'boot_sector_virus': 'A virus that has infected the boot sector of the drive, activating before the operating system loads. It can manipulate system startup and hide other malicious code.'
-        })
-        
-        self.kernel.add_items({
-            'rootkit_virus': 'A sophisticated rootkit that has embedded itself in the kernel, hiding its presence from standard detection methods. It has elevated privileges to manipulate system behavior.'
-        })
-        
-        self.ram.add_items({
-            'memory_resident_virus': 'A virus that stays entirely in RAM, modifying programs as they\'re loaded from storage. It leaves no traces on disk, making it difficult to detect through conventional scans.'
-        })
-        
-        self.bios.add_items({
-            'firmware_virus': 'A virus that has infected the system firmware, persisting even through operating system reinstalls. It can manipulate hardware initialization and compromise the system from the earliest boot stages.'
-        })
-        
-        self.network_interface.add_items({
-            'packet_sniffer_virus': 'A virus that captures and redirects sensitive network traffic. It can intercept data before encryption or after decryption, allowing it to steal credentials and sensitive information.'
-        })
+# These methods have been removed since we're now using Map class from map.py
 
     def display_welcome(self):
         """Display welcome message and game introduction"""
@@ -570,6 +401,9 @@ Inventory:
 Security Functions:
   scan             - Search for viruses in current location
   scan [item]      - Check if a specific item contains a virus
+  advscan          - Perform advanced scan (requires decoder_tool)
+  advscan [item]   - Perform advanced scan on specific item
+  analyze [item]   - Deeply analyze an item for hidden properties
   quarantine [virus] - Contain a discovered virus
 
 Information:
@@ -577,12 +411,103 @@ Information:
   knowledge        - View your computer architecture knowledge
   about [topic]    - Get information about a computer component
   
+Progress Tracking:
+  achievements     - View your achievements and progress report
+  stats            - Alternative command for achievements
+  
+Educational Features:
+  visualize [comp] - Show visualization of a component (cpu, memory, network, storage)
+  viz [comp]       - Shorthand for visualize
+  simulate cpu     - Start CPU pipeline simulation minigame
+  simulate memory  - Start memory hierarchy simulation
+  simulate step    - Advance simulation by one step
+  simulate toggle  - Toggle between simulation modes
+  simulate reset   - Reset the simulation
+  
 System:
   help             - Show this help message
   quit             - Exit the game
 """
         return help_text
         
+    def start_cpu_minigame(self):
+        """Start the CPU pipeline simulation minigame"""
+        if self.player.knowledge['cpu'] < 3:
+            return "You need more knowledge about CPU architecture to understand this simulation. Explore CPU components and learn more first."
+        
+        self.current_minigame = CPUPipelineMinigame(self)
+        
+        return self.current_minigame.explain() + "\n\n" + self.current_minigame.get_status() + "\n\nUse 'simulate step' to advance the simulation, 'simulate toggle' to switch modes, and 'simulate reset' to restart."
+        
+    def start_memory_minigame(self):
+        """Start the memory hierarchy simulation minigame"""
+        if self.player.knowledge['memory'] < 3:
+            return "You need more knowledge about memory systems to understand this simulation. Explore memory components and learn more first."
+        
+        self.current_minigame = MemoryHierarchyMinigame(self)
+        
+        return self.current_minigame.explain()
+        
+    def handle_visualization(self, viz_type=None):
+        """Handle visualization commands"""
+        if not viz_type:
+            return "Please specify what to visualize: 'viz cpu', 'viz memory', 'viz network', or 'viz storage'."
+            
+        viz_type = viz_type.lower()
+        
+        if viz_type in ['cpu', 'processor']:
+            self.current_visualization = 'cpu'
+            return "Displaying CPU visualization in text mode:\n\n" + self.visualizer.render_cpu_text()
+            
+        elif viz_type in ['memory', 'ram', 'cache']:
+            self.current_visualization = 'memory'
+            return "Displaying memory hierarchy visualization in text mode:\n\n" + self.visualizer.render_memory_hierarchy_text()
+            
+        elif viz_type in ['network', 'protocol']:
+            self.current_visualization = 'network'
+            return "Displaying network protocol stack visualization in text mode:\n\n" + self.visualizer.render_network_stack_text()
+            
+        elif viz_type in ['storage', 'disk', 'drive']:
+            self.current_visualization = 'storage'
+            return "Displaying storage systems visualization in text mode:\n\n" + self.visualizer.render_storage_hierarchy_text()
+            
+        elif viz_type == 'stop':
+            prev_viz = self.current_visualization
+            self.current_visualization = None
+            return f"Stopped {prev_viz} visualization. Returning to text mode."
+            
+        else:
+            return f"Unknown visualization type: {viz_type}. Try 'cpu', 'memory', 'network', or 'storage'."
+            
+    def handle_simulation(self, action=None):
+        """Handle simulation commands"""
+        if not self.current_minigame:
+            return "No active simulation. Start one with 'simulate cpu' or 'simulate memory'."
+            
+        if not action:
+            return "Please specify a simulation action: 'step', 'toggle', 'reset', or 'stop'."
+            
+        action = action.lower()
+        
+        if action == 'step':
+            return self.current_minigame.step()
+            
+        elif action == 'toggle':
+            if hasattr(self.current_minigame, 'toggle_pipeline'):
+                return self.current_minigame.toggle_pipeline()
+            else:
+                return "This simulation doesn't support toggling modes."
+                
+        elif action == 'reset':
+            return self.current_minigame.reset()
+            
+        elif action == 'stop':
+            self.current_minigame = None
+            return "Simulation stopped."
+            
+        else:
+            return f"Unknown simulation action: {action}. Try 'step', 'toggle', 'reset', or 'stop'."
+            
     def get_component_info(self, topic):
         """Provide educational information about computer components"""
         topics = {
@@ -702,8 +627,8 @@ Your final statistics:
 Thank you for playing ComputerQuest!
 """.format(
     turns=self.turns,
-    components=sum(1 for room in self.rooms if room.visited),
-    total_components=len(self.rooms),
+    components=sum(1 for room in self.game_map.rooms.values() if room.visited),
+    total_components=len(self.game_map.rooms),
     knowledge_level=sum(self.player.knowledge.values())
 )
     
@@ -726,74 +651,97 @@ Thank you for playing ComputerQuest!
         
         # Handle movement commands (including just typing the direction)
         if command in directions:
-            return self.move(command)
+            result = self.move(command)
             
         # Handle 'go' command
         elif command == 'go':
             if len(cmd_list) > 1 and cmd_list[1] in directions:
-                return self.move(cmd_list[1])
+                result = self.move(cmd_list[1])
             else:
-                return "Please specify a valid direction (n, s, e, w, etc.)"
+                result = "Please specify a valid direction (n, s, e, w, etc.)"
                 
         # Handle 'look' command
         elif command == 'look':
             if len(cmd_list) > 1:
                 # Look at specific item
                 item_name = cmd_list[1]
-                return self.player.look(item_name)
+                result = self.player.look(item_name)
             else:
                 # Look around current location
                 # Mark component as visited to reveal more technical details
                 self.player.location.mark_visited()
-                return self.player.look()
+                result = self.player.look()
                 
         # Handle 'take' command
         elif command == 'take' or command == 'get':
             if len(cmd_list) > 1:
                 item_name = cmd_list[1]
-                return self.player.take(item_name)
+                result = self.player.take(item_name)
+                self.turns += 1
             else:
-                return "What do you want to take?"
+                result = "What do you want to take?"
                 
         # Handle 'drop' command
         elif command == 'drop':
             if len(cmd_list) > 1:
                 item_name = cmd_list[1]
-                return self.player.drop(item_name)
+                result = self.player.drop(item_name)
+                self.turns += 1
             else:
-                return "What do you want to drop?"
+                result = "What do you want to drop?"
                 
         # Handle 'inventory' command
         elif command == 'inventory' or command == 'i':
             if not self.player.items:
-                return "Your system storage is empty."
-            
-            result = "System Storage Contains:\n"
-            for item, desc in self.player.items.items():
-                # Show abbreviated description for inventory listing
-                short_desc = desc.split('.')[0] if '.' in desc else desc
-                if len(short_desc) > 50:
-                    short_desc = short_desc[:47] + "..."
-                result += f"- {item}: {short_desc}\n"
-            return result
+                result = "Your system storage is empty."
+            else:
+                result = "System Storage Contains:\n"
+                for item, desc in self.player.items.items():
+                    # Show abbreviated description for inventory listing
+                    short_desc = desc.split('.')[0] if '.' in desc else desc
+                    if len(short_desc) > 50:
+                        short_desc = short_desc[:47] + "..."
+                    result += f"- {item}: {short_desc}\n"
             
         # Handle 'scan' command
         elif command == 'scan':
             if len(cmd_list) > 1:
                 target = cmd_list[1]
-                return self.player.scan(target)
+                result = self.player.scan(target)
             else:
                 result = self.player.scan()
                 # Check for game winning conditions
                 if len(self.player.found_viruses) == len(self.viruses):
                     self.all_viruses_found = True
-                return result
+            self.turns += 1
+            
+        # Handle 'advanced-scan' or 'advscan' command
+        elif command in ['advanced-scan', 'advscan', 'advanced_scan']:
+            if len(cmd_list) > 1:
+                target = cmd_list[1]
+                result = self.player.advanced_scan(target)
+            else:
+                result = self.player.advanced_scan()
+                # Check for game winning conditions
+                if len(self.player.found_viruses) == len(self.viruses):
+                    self.all_viruses_found = True
+            self.turns += 1
+            
+        # Handle 'analyze' command
+        elif command == 'analyze':
+            if len(cmd_list) > 1:
+                target = cmd_list[1]
+                result = self.player.analyze(target)
+                self.turns += 1
+            else:
+                result = "What do you want to analyze? Usage: analyze [item]"
                 
         # Handle 'quarantine' command
         elif command == 'quarantine':
             if len(cmd_list) > 1:
                 virus_name = cmd_list[1]
                 result = self.player.quarantine(virus_name)
+                self.turns += 1
                 
                 # Check for victory condition
                 if len(self.player.quarantined_viruses) == len(self.viruses):
@@ -801,18 +749,20 @@ Thank you for playing ComputerQuest!
                     result += "\n\n" + self.victory_message()
                     self.game_over = True
                     # In a full implementation, we'd save high scores here
-                    
-                return result
             else:
-                return "Which virus do you want to quarantine?"
+                result = "Which virus do you want to quarantine?"
                 
         # Handle 'status' or 'progress' command
         elif command in ['status', 'progress']:
-            return self.player.check_progress()
+            result = self.player.check_progress()
+        
+        # Handle 'achievements' command
+        elif command in ['achievements', 'achieve', 'stats']:
+            result = self.progress.get_progress_report()
             
         # Handle 'knowledge' command
         elif command == 'knowledge':
-            return self.player.knowledge_report()
+            result = self.player.knowledge_report()
             
         # Handle 'read' command
         elif command == 'read':
@@ -824,44 +774,76 @@ Thank you for playing ComputerQuest!
                     content = self.player.items[item_name]
                     if content.startswith('#'):
                         # Format as proper document if it starts with #
-                        return content.replace('# ', '').replace('#', '')
+                        result = content.replace('# ', '').replace('#', '')
                     else:
-                        return content
+                        result = content
                     
                 # Check if item is in the room
                 elif item_name in self.player.location.items:
                     content = self.player.location.items[item_name]
                     if content.startswith('#'):
                         # Format as proper document if it starts with #
-                        return content.replace('# ', '').replace('#', '')
+                        result = content.replace('# ', '').replace('#', '')
                     else:
-                        return content
+                        result = content
                     
                 else:
-                    return f"There is no {item_name} to read here."
+                    result = f"There is no {item_name} to read here."
             else:
-                return "What do you want to read?"
+                result = "What do you want to read?"
                 
         # Handle 'help' command
         elif command == 'help':
-            return self.show_help()
+            result = self.show_help()
             
         # Handle 'quit' or 'exit' command
         elif command in ['quit', 'exit', 'q']:
             confirm = input("Are you sure you want to exit? Progress will be lost. (y/n): ").lower()
             if confirm in ['y', 'yes']:
                 self.game_over = True
-                return "Exiting ComputerQuest. Goodbye!"
+                result = "Exiting ComputerQuest. Goodbye!"
             else:
-                return "Continuing mission..."
+                result = "Continuing mission..."
         
         # Handle 'about' command to show info about a computer component
         elif command == 'about':
             if len(cmd_list) > 1:
                 topic = cmd_list[1].lower()
-                return self.get_component_info(topic)
+                result = self.get_component_info(topic)
             else:
-                return "What topic would you like information about? Try 'about cpu', 'about memory', etc."
+                result = "What topic would you like information about? Try 'about cpu', 'about memory', etc."
+        
+        # Handle visualization commands
+        elif command == 'visualize' or command == 'viz':
+            if len(cmd_list) > 1:
+                viz_type = cmd_list[1].lower()
+                result = self.handle_visualization(viz_type)
+            else:
+                result = self.handle_visualization()
+        
+        # Handle simulation commands
+        elif command == 'simulate' or command == 'sim':
+            if len(cmd_list) > 1:
+                sim_action = cmd_list[1].lower()
+                
+                if sim_action == 'cpu':
+                    result = self.start_cpu_minigame()
+                elif sim_action == 'memory':
+                    result = self.start_memory_minigame()
+                else:
+                    # This is an action for an already running simulation
+                    result = self.handle_simulation(sim_action)
+            else:
+                result = "Please specify a simulation type (cpu, memory) or action (step, toggle, reset, stop)."
                 
         else:
-            return f"Command '{command}' not recognized. Type 'help' for available commands."
+            result = f"Command '{command}' not recognized. Type 'help' for available commands."
+            
+        # Check for new achievements and notify the player
+        newly_unlocked = self.progress.update()
+        if newly_unlocked:
+            result += "\n\nACHIEVEMENT UNLOCKED!\n"
+            for achievement in newly_unlocked:
+                result += f"- {achievement.name}: {achievement.description}\n"
+                
+        return result
