@@ -69,17 +69,22 @@ class Player:
         """
         if len(self.items) == 8:
             #Stop code if you've maxed out on items
-            return
+            return "Your inventory is full. Drop something first."
+            
         if item in self.location.items:
             #Takes item out of the room dictionary and places it in the player's dictionary
             self.items.update({item:self.location.items.pop(item)})
+            return f"Taken: {item}"
+            
         for k, v in self.location.items.items():
             #checks if item is in a container and pulls it out
             if type(v) == type(dict()):
                 for l, w in v.items():
                     if l == item:
                         v.pop(l)
-                        break
+                        return f"Taken: {item}"
+                        
+        return f"There is no {item} here to take."
     
     def drop(self, item):
         """
@@ -89,7 +94,10 @@ class Player:
         if item in self.items:
             d = self.items[item] #gets item description
             self.items.pop(item) #removes item from player
-            self.location.items.update({item:d}) #places item  in room
+            self.location.items.update({item:d}) #places item in room
+            return f"Dropped: {item}"
+        else:
+            return f"You don't have {item} in your inventory."
 
     def kill(self, npc, dam):
         """

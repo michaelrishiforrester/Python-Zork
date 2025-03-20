@@ -1228,6 +1228,9 @@ Thank you for playing KodeKloud Computer Quest!
         cmd_list = [word.lower() for word in cmd_list]
         command = cmd_list[0]
         
+        # Implement command prefix matching
+        command = self._match_command_prefix(command)
+        
         # Movement directions
         directions = ['north', 'n', 'south', 's', 'east', 'e', 'west', 'w', 
                      'northeast', 'ne', 'northwest', 'nw', 'southeast', 'se', 
@@ -1255,8 +1258,17 @@ Thank you for playing KodeKloud Computer Quest!
         # Handle 'look' command
         elif command == 'look':
             if len(cmd_list) > 1:
-                # Look at specific item
+                # Look at specific item in room or inventory
                 item_name = cmd_list[1]
+                # Try to match with room items first, then inventory items
+                if item_name not in self.player.location.items and item_name not in self.player.items:
+                    room_match = self._match_item_prefix(item_name)
+                    inv_match = self._match_inventory_item_prefix(item_name)
+                    # Use the room match if found, otherwise use inventory match
+                    if room_match in self.player.location.items:
+                        item_name = room_match
+                    elif inv_match in self.player.items:
+                        item_name = inv_match
                 result = self.player.look(item_name)
             else:
                 # Look around current location
@@ -1268,6 +1280,8 @@ Thank you for playing KodeKloud Computer Quest!
         elif command == 'take' or command == 'get':
             if len(cmd_list) > 1:
                 item_name = cmd_list[1]
+                # Match item prefix
+                item_name = self._match_item_prefix(item_name)
                 result = self.player.take(item_name)
                 self.turns += 1
             else:
@@ -1277,6 +1291,8 @@ Thank you for playing KodeKloud Computer Quest!
         elif command == 'drop':
             if len(cmd_list) > 1:
                 item_name = cmd_list[1]
+                # Match item prefix
+                item_name = self._match_inventory_item_prefix(item_name)
                 result = self.player.drop(item_name)
                 self.turns += 1
             else:
@@ -1360,6 +1376,16 @@ Thank you for playing KodeKloud Computer Quest!
         elif command == 'read':
             if len(cmd_list) > 1:
                 item_name = cmd_list[1]
+                
+                # Try to match with room items first, then inventory items
+                if item_name not in self.player.location.items and item_name not in self.player.items:
+                    room_match = self._match_item_prefix(item_name)
+                    inv_match = self._match_inventory_item_prefix(item_name)
+                    # Use the room match if found, otherwise use inventory match
+                    if room_match in self.player.location.items:
+                        item_name = room_match
+                    elif inv_match in self.player.items:
+                        item_name = inv_match
                 
                 # Check if item is in inventory
                 if item_name in self.player.items:
@@ -1458,3 +1484,85 @@ Thank you for playing KodeKloud Computer Quest!
                 result += f"- {achievement.name}: {achievement.description}\n"
                 
         return result
+        
+    def _match_command_prefix(self, cmd):
+        """Match command prefix with valid commands, return full command if unique match found"""
+        if len(cmd) < 2:
+            return cmd  # Don't try to match single-letter commands
+            
+        # Dictionary of valid commands (excluding single-letter shorthands and directional commands)
+        valid_commands = {
+            'take': 'take', 'get': 'take',
+            'drop': 'drop',
+            'inventory': 'inventory',
+            'look': 'look', 'examine': 'look',
+            'read': 'read',
+            'map': 'map', 'motherboard': 'motherboard', 
+            'scan': 'scan', 'advscan': 'advscan', 'advanced-scan': 'advscan',
+            'analyze': 'analyze',
+            'quarantine': 'quarantine',
+            'status': 'status', 'progress': 'status',
+            'knowledge': 'knowledge',
+            'about': 'about',
+            'achievements': 'achievements', 'achieve': 'achievements', 'stats': 'achievements',
+            'visualize': 'visualize', 'viz': 'visualize',
+            'simulate': 'simulate', 'sim': 'simulate',
+            'save': 'save', 'load': 'load', 'saves': 'saves', 'listsaves': 'saves', 'deletesave': 'deletesave',
+            'help': 'help',
+            'quit': 'quit', 'exit': 'quit'
+        }
+        
+        # Check for exact match first
+        if cmd in valid_commands:
+            return valid_commands[cmd]
+            
+        # Check for prefix match
+        matches = [full_cmd for pattern, full_cmd in valid_commands.items() if pattern.startswith(cmd)]
+        
+        # Return the matched command if only one match, otherwise return original command
+        if len(matches) == 1:
+            return matches[0]
+        else:
+            return cmd
+            
+    def _match_item_prefix(self, item_prefix):
+        """Match item prefix with items in current room, return full item name if unique match found"""
+        if len(item_prefix) < 2:
+            return item_prefix  # Don't try to match single-letter items
+            
+        # Get all items in current room
+        room_items = list(self.player.location.items.keys())
+        
+        # Check for exact match first
+        if item_prefix in room_items:
+            return item_prefix
+            
+        # Check for prefix match
+        matches = [item for item in room_items if item.startswith(item_prefix)]
+        
+        # Return the matched item if only one match, otherwise return original item
+        if len(matches) == 1:
+            return matches[0]
+        else:
+            return item_prefix
+            
+    def _match_inventory_item_prefix(self, item_prefix):
+        """Match item prefix with items in inventory, return full item name if unique match found"""
+        if len(item_prefix) < 2:
+            return item_prefix  # Don't try to match single-letter items
+            
+        # Get all items in inventory
+        inventory_items = list(self.player.items.keys())
+        
+        # Check for exact match first
+        if item_prefix in inventory_items:
+            return item_prefix
+            
+        # Check for prefix match
+        matches = [item for item in inventory_items if item.startswith(item_prefix)]
+        
+        # Return the matched item if only one match, otherwise return original item
+        if len(matches) == 1:
+            return matches[0]
+        else:
+            return item_prefix
