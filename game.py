@@ -5,6 +5,7 @@ from room import Room
 from map import Map
 from visualizer import ComponentVisualizer
 from minigames import CPUPipelineMinigame, MemoryHierarchyMinigame
+from saveload import SaveLoadSystem
 
 class Achievement:
     def __init__(self, id, name, description, condition_fn, reward=None):
@@ -256,6 +257,9 @@ class Game:
         # Initialize minigame state
         self.current_minigame = None
         self.current_visualization = None
+        
+        # Initialize save/load system
+        self.save_load = SaveLoadSystem(self)
         
         # Initialize map grid for tracking visited rooms
         self.map_grid = {
@@ -925,6 +929,12 @@ Educational Features:
   simulate toggle  - Toggle between simulation modes
   simulate reset   - Reset the simulation
   
+Save/Load:
+  save [name]      - Save your game progress (optional name)
+  load [name]      - Load a saved game
+  saves            - List all available save files
+  deletesave [name] - Delete a saved game
+  
 System:
   help             - Show this help message
   quit             - Exit the game
@@ -1394,6 +1404,25 @@ Thank you for playing ComputerQuest!
                 result = self.get_component_info(topic)
             else:
                 result = "What topic would you like information about? Try 'about cpu', 'about memory', etc."
+                
+        # Handle save/load commands
+        elif command == 'save':
+            if len(cmd_list) > 1:
+                result = self.save_load.save_game(cmd_list[1])
+            else:
+                result = self.save_load.save_game()
+        elif command == 'load':
+            if len(cmd_list) > 1:
+                result = self.save_load.load_game(cmd_list[1])
+            else:
+                result = "Please specify a save file to load. Use 'saves' to list available saves."
+        elif command in ['saves', 'listsaves']:
+            result = self.save_load.list_saves()
+        elif command == 'deletesave':
+            if len(cmd_list) > 1:
+                result = self.save_load.delete_save(cmd_list[1])
+            else:
+                result = "Please specify a save file to delete."
         
         # Handle visualization commands
         elif command == 'visualize' or command == 'viz':
