@@ -1,3 +1,5 @@
+thinking of putting  this new may into the game because it is more modeern and update 
+
 import room
 import player
 
@@ -349,99 +351,51 @@ class Map:
         self.core1.connect_to(self.core1_l1, 's')
         self.core1.connect_to(self.l2_cache1, 'se')
         
-        # Add return connections for Core 1 components
-        self.core1_cu.connect_to(self.core1, 's')
-        self.core1_alu.connect_to(self.core1, 'w')
-        self.core1_registers.connect_to(self.core1, 'e')
-        self.core1_l1.connect_to(self.core1, 'n')
-        
-        # Connect Core 2 components (similar to Core 1)
-        # Note: Core 2 doesn't have its internal components fully implemented
-        # But we need to ensure Core 2 has a way back to CPU Package
-        self.core2.connect_to(self.cpu_package, 'sw')
-        self.core2.connect_to(self.l2_cache2, 's')
+        # Connect Core 2 components similarly...
         
         # Connect L2 and L3 caches
-        self.l2_cache1.connect_to(self.core1, 'nw')  # Return path to Core 1
         self.l2_cache1.connect_to(self.l3_cache, 's')
-        self.l2_cache2.connect_to(self.core2, 'n')   # Return path to Core 2
         self.l2_cache2.connect_to(self.l3_cache, 's')
         
-        # Connect L3 to Memory Controller and back to CPU Package
+        # Connect L3 to Memory Controller
         self.l3_cache.connect_to(self.memory_controller, 's')
-        self.l3_cache.connect_to(self.cpu_package, 'n')  # Return path
         
         # Connect Memory Controller to RAM
         self.memory_controller.connect_to(self.ram_dimm1, 'w')
         self.memory_controller.connect_to(self.ram_dimm2, 'sw')
         self.memory_controller.connect_to(self.ram_dimm3, 'nw')
         self.memory_controller.connect_to(self.ram_dimm4, 'n')
-        self.memory_controller.connect_to(self.l3_cache, 'n')  # Return path
         
-        # Connect RAM to conceptual components and back to memory controller
+        # Connect RAM to conceptual components
         self.ram_dimm1.connect_to(self.kernel, 'w')
-        self.ram_dimm1.connect_to(self.memory_controller, 'e')  # Return path
-        
         self.ram_dimm2.connect_to(self.virtual_memory, 'w')
-        self.ram_dimm2.connect_to(self.memory_controller, 'ne')  # Return path
         
-        self.ram_dimm3.connect_to(self.memory_controller, 'se')  # Return path
-        self.ram_dimm4.connect_to(self.memory_controller, 's')   # Return path
-        
-        # Connect conceptual components back to RAM
-        self.kernel.connect_to(self.ram_dimm1, 'e')
-        self.virtual_memory.connect_to(self.ram_dimm2, 'e')
-        
-        # Connect CPU Package to PCH via DMI Link (bidirectional)
+        # Connect CPU Package to PCH via DMI Link
         self.cpu_package.connect_to(self.pch, 'd')  # Down represents the DMI Link
-        self.pch.connect_to(self.cpu_package, 'u')  # Up to return to CPU
         
-        # Connect PCH to its internal components (with return paths)
+        # Connect PCH to its internal components
         self.pch.connect_to(self.storage_controller, 'n')
-        self.storage_controller.connect_to(self.pch, 's')  # Return path
-        
         self.pch.connect_to(self.pcie_controller, 'e')
-        self.pcie_controller.connect_to(self.pch, 'w')  # Return path
-        
         self.pch.connect_to(self.network_interface, 's')
-        self.network_interface.connect_to(self.pch, 'n')  # Return path
-        
         self.pch.connect_to(self.bios, 'w')
-        self.bios.connect_to(self.pch, 'e')  # Return path
         
-        # Connect storage components (with return paths)
+        # Connect storage components
         self.storage_controller.connect_to(self.sata_ports, 'w')
-        self.sata_ports.connect_to(self.storage_controller, 'e')  # Return path
-        
         self.sata_ports.connect_to(self.ssd, 'nw')
-        self.ssd.connect_to(self.sata_ports, 'se')  # Return path
-        
         self.sata_ports.connect_to(self.hdd, 'sw')
-        self.hdd.connect_to(self.sata_ports, 'ne')  # Return path
         
-        # Connect PCIe components (with return paths)
+        # Connect PCIe components
         self.pcie_controller.connect_to(self.pcie_x16, 's')
-        self.pcie_x16.connect_to(self.pcie_controller, 'n')  # Return path
-        
         self.pcie_controller.connect_to(self.pcie_x1_1, 'se')
-        self.pcie_x1_1.connect_to(self.pcie_controller, 'nw')  # Return path
-        
         self.pcie_controller.connect_to(self.pcie_x1_2, 'sw')
-        self.pcie_x1_2.connect_to(self.pcie_controller, 'ne')  # Return path
-        
         self.pcie_x16.connect_to(self.gpu, 'w')
-        self.gpu.connect_to(self.pcie_x16, 'e')  # Return path
         
-        # Connect external ports (with return paths)
+        # Connect external ports
         self.pch.connect_to(self.usb_ports, 'ne')
-        self.usb_ports.connect_to(self.pch, 'sw')  # Return path
-        
         self.pch.connect_to(self.ethernet, 'se')
-        self.ethernet.connect_to(self.pch, 'nw')  # Return path
         
         # Connect Virtual Memory to storage (conceptual link)
         self.virtual_memory.connect_to(self.storage_controller, 's')
-        self.storage_controller.connect_to(self.virtual_memory, 'n')  # Return path
 
     def setup(self):
         """
@@ -451,7 +405,3 @@ class Map:
         self.connectRooms()
         self.createItems()
         self.createPlayer()
-
-if __name__ == "__main__":
-    init = Map()
-    init.setup()

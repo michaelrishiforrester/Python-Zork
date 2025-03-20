@@ -257,6 +257,65 @@ class Game:
         self.current_minigame = None
         self.current_visualization = None
         
+        # Initialize map grid for tracking visited rooms
+        self.map_grid = {
+            # CPU Package
+            'cpu_package': {'visited': False},
+            
+            # Cores and components
+            'core1': {'visited': False},
+            'core1_cu': {'visited': False},
+            'core1_alu': {'visited': False},
+            'core1_registers': {'visited': False},
+            'core1_l1': {'visited': False},
+            'core2': {'visited': False},
+            
+            # Cache hierarchy
+            'l2_cache1': {'visited': False},
+            'l2_cache2': {'visited': False},
+            'l3_cache': {'visited': False},
+            'memory_controller': {'visited': False},
+            
+            # RAM
+            'ram_dimm1': {'visited': False},
+            'ram_dimm2': {'visited': False},
+            'ram_dimm3': {'visited': False},
+            'ram_dimm4': {'visited': False},
+            
+            # Conceptual spaces
+            'kernel': {'visited': False},
+            'virtual_memory': {'visited': False},
+            
+            # PCH components
+            'pch': {'visited': False},
+            'storage_controller': {'visited': False},
+            'pcie_controller': {'visited': False},
+            'network_interface': {'visited': False},
+            'bios': {'visited': False},
+            
+            # Storage 
+            'sata_ports': {'visited': False},
+            'ssd': {'visited': False},
+            'hdd': {'visited': False},
+            
+            # PCIe and expansion
+            'pcie_x16': {'visited': False},
+            'pcie_x1_1': {'visited': False},
+            'pcie_x1_2': {'visited': False},
+            'gpu': {'visited': False},
+            
+            # External ports
+            'usb_ports': {'visited': False},
+            'ethernet': {'visited': False}
+        }
+        
+        # Mark the starting room as visited on the map
+        for room_id, room in self.game_map.rooms.items():
+            if room == self.player.location:
+                if room_id in self.map_grid:
+                    self.map_grid[room_id]['visited'] = True
+                break
+                
         # Print welcome message
         self.display_welcome()
         
@@ -358,6 +417,14 @@ class Game:
             # Mark newly visited components
             curr_location.mark_visited()
             
+            # Update map - find which room this is
+            for room_id, room in self.game_map.rooms.items():
+                if room == curr_location:
+                    # Found the room ID
+                    if room_id in self.map_grid:
+                        self.map_grid[room_id]['visited'] = True
+                    break
+            
             # Update turn counter
             self.turns += 1
             
@@ -379,6 +446,429 @@ class Game:
             # Failed to move
             return f"There is no connection to the {direction} from {self.player.location.name}."
             
+    def display_map(self):
+        """
+        Display an interactive map of visited rooms that reveals only explored areas
+        """
+        # Make sure starting room is always marked as visited
+        for room_id, room in self.game_map.rooms.items():
+            if room == self.game_map.player.location:
+                if room_id in self.map_grid:
+                    self.map_grid[room_id]['visited'] = True
+                break
+                
+        # Template for creating fog of war (unexplored areas)
+        empty_frame = [
+            "+------------------------------------------------------------------+",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "|                                                                  |",
+            "+------------------------------------------------------------------+"
+        ]
+        
+        # Component parts of the motherboard - will be revealed when visited
+        component_parts = {
+            'kernel': [
+                "|   +----------+                                                 |",
+                "|   |          |                                                 |",
+                "|   | OS Kernel|                                                 |",
+                "|   | (In RAM) |                                                 |",
+                "|   +----------+                                                 |"
+            ],
+            'virtual_memory': [
+                "|   +----------+                                                 |",
+                "|   | Virtual  |                                                 |",
+                "|   | Memory   |                                                 |",
+                "|   |          |                                                 |",
+                "|   +----------+                                                 |"
+            ],
+            'cpu_package': [
+                "|                    +----------------------------------+         |",
+                "|                    |                                  |         |",
+                "|                    |           CPU Package            |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    +----------------------------------+         |"
+            ],
+            'core1': [
+                "|                    |  +--------+                      |         |",
+                "|                    |  | Core 1 |                      |         |",
+                "|                    |  +--------+                      |         |"
+            ],
+            'core2': [
+                "|                    |                    +--------+    |         |",
+                "|                    |                    | Core 2 |    |         |",
+                "|                    |                    +--------+    |         |"
+            ],
+            'core_components': [
+                "|                    |  | CU|ALU |        | CU|ALU |    |         |",
+                "|                    |  | Reg|L1 |        | Reg|L1 |    |         |"
+            ],
+            'l2_cache': [
+                "|                    |  +--------+        +--------+    |         |",
+                "|                    |  |L2 Cache|        |L2 Cache|    |         |",
+                "|                    |  +--------+        +--------+    |         |"
+            ],
+            'l3_cache': [
+                "|                    |  +----------------------------+   |         |",
+                "|                    |  |      L3 Cache (Shared)     |   |         |",
+                "|                    |  +----------------------------+   |         |"
+            ],
+            'ram_dimm1': [
+                "|   +----------+                                                 |",
+                "|   |RAM DIMM 1|--                                              |",
+                "|   +----------+                                                 |"
+            ],
+            'ram_dimm2': [
+                "|   +----------+                                                 |",
+                "|   |RAM DIMM 2|                                                 |",
+                "|   +----------+                                                 |"
+            ],
+            'ram_dimm3': [
+                "|   +----------+                                                 |",
+                "|   |RAM DIMM 3|                                                 |",
+                "|   +----------+                                                 |"
+            ],
+            'ram_dimm4': [
+                "|   +----------+                                                 |",
+                "|   |RAM DIMM 4|                                                 |",
+                "|   +----------+                                                 |"
+            ],
+            'dmi_link': [
+                "|                                    |                           |",
+                "|                               DMI Link                         |",
+                "|                                    |                           |"
+            ],
+            'pch': [
+                "|                    +----------------------------------+         |",
+                "|                    |               PCH                |         |",
+                "|                    |     (Platform Controller Hub)    |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    |                                  |         |",
+                "|                    +----------------------------------+         |"
+            ],
+            'pch_controllers': [
+                "|                    |  +----------+      +----------+   |         |",
+                "|                    |  | Storage  |      |   PCIe   |   |         |",
+                "|                    |  |Controller|      |Controller|   |         |",
+                "|                    |  +----------+      +----------+   |         |"
+            ],
+            'pch_components': [
+                "|                    |  +----------+      +----------+   |         |",
+                "|                    |  | Network  |      |BIOS/UEFI |   |         |",
+                "|                    |  |Interface |      |  Flash   |   |         |",
+                "|                    |  +----------+      +----------+   |         |"
+            ],
+            'storage': [
+                "|   +------+                                                    |",
+                "|   | SSD  |-------                                             |",
+                "|   +------+                                                    |",
+                "|                                                               |",
+                "|   +------+                                                    |",
+                "|   | HDD  |---+                                                |",
+                "|   +------+   |                                                |"
+            ],
+            'io_ports': [
+                "|                    +-----------------+---------+--------+      |",
+                "|                    |  SATA Ports     |    USB Ports    Ethernet |",
+                "|                    +-----------------+---------+--------+      |"
+            ],
+            'pcie_slots': [
+                "|                    +----------------+                          |",
+                "|                    |  PCIe x16 Slot |                          |",
+                "|                    +----------------+                          |",
+                "|                                                                |",
+                "|                    +----------------+                          |",
+                "|                    |  PCIe x1 Slot  |                          |",
+                "|                    +----------------+                          |",
+                "|                                                                |",
+                "|                    +----------------+                          |",
+                "|                    |  PCIe x1 Slot  |                          |",
+                "|                    +----------------+                          |"
+            ],
+            'gpu': [
+                "|   +------+                                                    |",
+                "|   | GPU  |-------                                             |",
+                "|   +------+                                                    |"
+            ]
+        }
+        
+        # Create the fog of war map (start with empty frame)
+        fog_map = empty_frame.copy()
+        
+        # Add title
+        fog_map[1] = "|                   ComputerQuest Exploration Map                |"
+        
+        # Dictionary of positions for each component in the map
+        # The position is (row, column) where the marker will be placed
+        positions = {
+            'kernel': (7, 8),                # OS Kernel
+            'virtual_memory': (12, 8),       # Virtual Memory
+            'cpu_package': (7, 36),          # CPU Package
+            'core1': (9, 15),                # Core 1
+            'core1_cu': (10, 13),            # Core 1 CU
+            'core1_alu': (10, 17),           # Core 1 ALU
+            'core1_registers': (11, 13),     # Core 1 Registers
+            'core1_l1': (11, 17),            # Core 1 L1
+            'core2': (9, 38),                # Core 2
+            'l2_cache1': (15, 15),           # L2 Cache 1
+            'l2_cache2': (15, 38),           # L2 Cache 2
+            'l3_cache': (19, 30),            # L3 Cache
+            'ram_dimm1': (19, 8),            # RAM DIMM 1
+            'ram_dimm2': (23, 8),            # RAM DIMM 2
+            'ram_dimm3': (27, 8),            # RAM DIMM 3
+            'ram_dimm4': (31, 8),            # RAM DIMM 4
+            'pch': (29, 36),                 # PCH
+            'storage_controller': (32, 15),  # Storage Controller
+            'pcie_controller': (32, 38),     # PCIe Controller
+            'network_interface': (37, 15),   # Network Interface
+            'bios': (37, 38),                # BIOS/UEFI
+            'ssd': (36, 8),                  # SSD
+            'hdd': (40, 8),                  # HDD
+            'sata_ports': (45, 16),          # SATA Ports
+            'usb_ports': (45, 36),           # USB Ports
+            'ethernet': (45, 51),            # Ethernet
+            'pcie_x16': (49, 28),            # PCIe x16 Slot
+            'gpu': (49, 8),                  # GPU
+            'pcie_x1_1': (53, 28),           # PCIe x1 Slot 1
+            'pcie_x1_2': (57, 28)            # PCIe x1 Slot 2
+        }
+        
+        # Component groups for revealing sections on the map
+        component_groups = {
+            'cpu_package': ['cpu_package'],
+            'kernel': ['kernel'],
+            'virtual_memory': ['virtual_memory'],
+            'core1': ['core1'],
+            'core_components': ['core1_cu', 'core1_alu', 'core1_registers', 'core1_l1'],
+            'core2': ['core2'],
+            'l2_cache': ['l2_cache1', 'l2_cache2'],
+            'l3_cache': ['l3_cache'],
+            'ram_dimm1': ['ram_dimm1'],
+            'ram_dimm2': ['ram_dimm2'],
+            'ram_dimm3': ['ram_dimm3'],
+            'ram_dimm4': ['ram_dimm4'],
+            'pch': ['pch'],
+            'pch_controllers': ['storage_controller', 'pcie_controller'],
+            'pch_components': ['network_interface', 'bios'],
+            'storage': ['ssd', 'hdd'],
+            'io_ports': ['sata_ports', 'usb_ports', 'ethernet'],
+            'pcie_slots': ['pcie_x16', 'pcie_x1_1', 'pcie_x1_2'],
+            'gpu': ['gpu']
+        }
+        
+        # Track which component parts to reveal based on visited rooms
+        revealed_parts = set()
+        
+        # Check which rooms have been visited and mark parts to reveal
+        for room_id, room_data in self.map_grid.items():
+            if room_data['visited']:
+                # Add revealed component parts based on visited rooms
+                for group_name, group_rooms in component_groups.items():
+                    if room_id in group_rooms:
+                        revealed_parts.add(group_name)
+                
+                # Special case for connections between components
+                if room_id == 'cpu_package' or room_id == 'pch':
+                    revealed_parts.add('dmi_link')
+                
+                if room_id in ['core1', 'core2', 'core1_cu', 'core1_alu', 'core1_registers', 'core1_l1']:
+                    revealed_parts.add('core_components')
+        
+        # Reveal map sections based on exploration
+        for part_name in revealed_parts:
+            if part_name in component_parts:
+                part_lines = component_parts[part_name]
+                
+                # Determine where to place these component lines
+                if part_name == 'kernel':
+                    start_row = 5
+                elif part_name == 'virtual_memory':
+                    start_row = 10
+                elif part_name == 'cpu_package':
+                    start_row = 5
+                elif part_name == 'core1':
+                    start_row = 8
+                elif part_name == 'core2':
+                    start_row = 8
+                elif part_name == 'core_components':
+                    start_row = 10
+                elif part_name == 'l2_cache':
+                    start_row = 14
+                elif part_name == 'l3_cache':
+                    start_row = 18
+                elif part_name == 'ram_dimm1':
+                    start_row = 18
+                elif part_name == 'ram_dimm2':
+                    start_row = 22
+                elif part_name == 'ram_dimm3':
+                    start_row = 26
+                elif part_name == 'ram_dimm4':
+                    start_row = 30
+                elif part_name == 'dmi_link':
+                    start_row = 23
+                elif part_name == 'pch':
+                    start_row = 27
+                elif part_name == 'pch_controllers':
+                    start_row = 31
+                elif part_name == 'pch_components':
+                    start_row = 36
+                elif part_name == 'storage':
+                    start_row = 35
+                elif part_name == 'io_ports':
+                    start_row = 44
+                elif part_name == 'pcie_slots':
+                    start_row = 48
+                elif part_name == 'gpu':
+                    start_row = 48
+                else:
+                    start_row = 1
+                
+                # Merge the component part into the fog map
+                for i, line in enumerate(part_lines):
+                    if start_row + i < len(fog_map):
+                        # Preserve the map border
+                        base_line = fog_map[start_row + i]
+                        for j in range(min(len(line), len(base_line))):
+                            if line[j] != ' ' and j > 0 and j < len(base_line) - 1:
+                                chars = list(base_line)
+                                chars[j] = line[j]
+                                base_line = ''.join(chars)
+                        fog_map[start_row + i] = base_line
+        
+        # Add markers for visited rooms and current location
+        for room_id, room in self.game_map.rooms.items():
+            if room_id in positions and room_id in self.map_grid and self.map_grid[room_id]['visited']:
+                row, col = positions[room_id]
+                
+                if row < len(fog_map) and col < len(fog_map[row]):
+                    # Mark current location with ★, visited locations with •
+                    if room == self.player.location:
+                        marker = '★'
+                    else:
+                        marker = '•'
+                        
+                    # Apply the marker
+                    line = fog_map[row]
+                    if col < len(line):
+                        fog_map[row] = line[:col] + marker + line[col+1:]
+        
+        # Combine the fog map into a string
+        map_str = "YOUR EXPLORATION MAP\n"
+        map_str += "===================\n\n"
+        
+        for line in fog_map:
+            map_str += line + '\n'
+            
+        map_str += "\nLEGEND:\n"
+        map_str += "------\n"
+        map_str += "• = Visited Location\n"
+        map_str += "★ = Current Location\n\n"
+        
+        # Add current location and available connections
+        map_str += f"You are currently in: {self.player.location.name}\n"
+        
+        # Add connections from current location
+        if self.player.location.doors:
+            map_str += "Available connections:\n"
+            for direction, connected_room in self.player.location.doors.items():
+                # Convert direction code to readable text
+                if direction == 'n':
+                    dir_text = 'North'
+                elif direction == 's':
+                    dir_text = 'South'
+                elif direction == 'e':
+                    dir_text = 'East'
+                elif direction == 'w':
+                    dir_text = 'West'
+                elif direction == 'ne':
+                    dir_text = 'Northeast'
+                elif direction == 'nw':
+                    dir_text = 'Northwest'
+                elif direction == 'se':
+                    dir_text = 'Southeast'
+                elif direction == 'sw':
+                    dir_text = 'Southwest'
+                elif direction == 'u':
+                    dir_text = 'Up'
+                elif direction == 'd':
+                    dir_text = 'Down (DMI Link)'
+                else:
+                    dir_text = direction
+                    
+                map_str += f"- {dir_text}: {connected_room.name}\n"
+                
+        # Add note about the motherboard command
+        map_str += "\nTip: Use the 'motherboard' command to see the full diagram."
+        
+        return map_str
+            
     def show_help(self):
         """Show available commands"""
         help_text = """
@@ -392,6 +882,8 @@ Exploration:
   look             - Examine your current location
   look [item]      - Examine a specific item
   read [item]      - Read text content of an item
+  map, m           - Display a map of visited computer components
+  motherboard      - Show the motherboard layout of the computer system
 
 Inventory:
   inventory        - List items in your storage
@@ -608,6 +1100,79 @@ Viruses typically attempt to hide their presence and propagate to other systems.
             else:
                 return f"No information available about '{topic}'. Try topics like: cpu, memory, cache, storage, bus, network, firmware, gpu, kernel, or virus."
                 
+    def display_motherboard(self):
+        """Display the full motherboard layout of the computer system"""
+        motherboard = [
+            "+------------------------------------------------------------------+",
+            "|                   ComputerQuest Motherboard Layout               |",
+            "+------------------------------------------------------------------+",
+            "|                                                                  |",
+            "|   +----------+     +----------------------------------+          |",
+            "|   |          |     |                                  |          |",
+            "|   | OS Kernel|     |           CPU Package            |          |",
+            "|   | (In RAM) |     |  +--------+        +--------+   |          |",
+            "|   +----------+     |  | Core 1 |        | Core 2 |   |          |",
+            "|                    |  | CU|ALU |        | CU|ALU |   |          |",
+            "|   +----------+     |  | Reg|L1 |        | Reg|L1 |   |          |",
+            "|   | Virtual  |     |  +--------+        +--------+   |          |",
+            "|   | Memory   |     |                                  |          |",
+            "|   |          |     |  +--------+        +--------+   |          |",
+            "|   +----------+     |  |L2 Cache|        |L2 Cache|   |          |",
+            "|                    |  +--------+        +--------+   |          |",
+            "|                    |                                  |          |",
+            "|   +----------+     |  +----------------------------+  |          |",
+            "|   |RAM DIMM 1|-----|  |      L3 Cache (Shared)     |  |          |",
+            "|   +----------+     |  +----------------------------+  |          |",
+            "|                    +----------------------------------+          |",
+            "|   +----------+                      |                            |",
+            "|   |RAM DIMM 2|                      |                            |",
+            "|   +----------+                DMI Link                           |",
+            "|                                     |                            |",
+            "|   +----------+                      |                            |",
+            "|   |RAM DIMM 3|     +----------------------------------+          |",
+            "|   +----------+     |                                  |          |",
+            "|                    |               PCH                |          |",
+            "|   +----------+     |     (Platform Controller Hub)    |          |",
+            "|   |RAM DIMM 4|     |  +----------+      +----------+  |          |",
+            "|   +----------+     |  | Storage  |      |   PCIe   |  |          |",
+            "|                    |  |Controller|      |Controller|  |          |",
+            "|                    |  +----------+      +----------+  |          |",
+            "|   +------+         |                                  |          |",
+            "|   | SSD  |---------|  +----------+      +----------+  |          |",
+            "|   +------+         |  | Network  |      |BIOS/UEFI |  |          |",
+            "|                    |  |Interface |      |  Flash   |  |          |",
+            "|   +------+         |  +----------+      +----------+  |          |",
+            "|   | HDD  |---+     +----------------------------------+          |",
+            "|   +------+   |                 |               |                 |",
+            "|              |                 |               |                 |",
+            "|              |     +-----------+     +---------+                 |",
+            "|              |     |                 |                           |",
+            "|              +-----|  SATA Ports     |    USB Ports    Ethernet |",
+            "|                    +-----------------+---------+--------+        |",
+            "|                                                                  |",
+            "|   +------+         +----------------+                            |",
+            "|   | GPU  |---------|  PCIe x16 Slot |                            |",
+            "|   +------+         +----------------+                            |",
+            "|                                                                  |",
+            "|                    +----------------+                            |",
+            "|                    |  PCIe x1 Slot  |                            |",
+            "|                    +----------------+                            |",
+            "|                                                                  |",
+            "|                    +----------------+                            |",
+            "|                    |  PCIe x1 Slot  |                            |",
+            "|                    +----------------+                            |",
+            "|                                                                  |",
+            "+------------------------------------------------------------------+",
+            "| Virus Locations:                                                 |",
+            "| * Rootkit Virus: OS Kernel         * Firmware Virus: BIOS/UEFI   |",
+            "| * Memory Resident Virus: RAM DIMM1 * Packet Sniffer: Network Int |",
+            "| * Boot Sector Virus: SSD                                         |",
+            "+------------------------------------------------------------------+"
+        ]
+        
+        # Return the motherboard layout as a string
+        return "\n".join(motherboard)
+
     def victory_message(self):
         """Generate victory message when all viruses are quarantined"""
         return """
@@ -649,6 +1214,14 @@ Thank you for playing ComputerQuest!
                      'northeast', 'ne', 'northwest', 'nw', 'southeast', 'se', 
                      'southwest', 'sw', 'up', 'u', 'down', 'd']
         
+        # Handle map command
+        if command in ['map', 'm']:
+            return self.display_map()
+            
+        # Handle motherboard command
+        if command in ['motherboard', 'mb']:
+            return self.display_motherboard()
+            
         # Handle movement commands (including just typing the direction)
         if command in directions:
             result = self.move(command)
