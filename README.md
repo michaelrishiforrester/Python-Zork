@@ -22,6 +22,10 @@ KodeKloud Computer Quest is an interactive text adventure where players navigate
 git clone https://github.com/yourusername/kodekloud-computer-quest.git
 cd kodekloud-computer-quest
 
+# Optional: Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
 # Run the game
 python main.py
 ```
@@ -49,10 +53,47 @@ The codebase follows a modular design with clear separation of concerns:
   - `mechanics/`: Game mechanics (Progress, Minigames)
   - `utils/`: Utility functions
 - `data/`: Game data files
+- `tests/`: Unit tests for all modules
+
+## Testing
+
+The project includes a comprehensive test suite to ensure all components function correctly.
+
+### Running the Tests
+
+To run all tests:
+
+```bash
+# Run all tests
+python tests/run_tests.py
+
+# Run a specific test module
+python tests/run_tests.py component  # Tests the Component class
+python tests/run_tests.py player     # Tests the Player class
+python tests/run_tests.py commands   # Tests the Command pattern implementation
+```
+
+### Test Coverage
+
+The test suite covers:
+- Component and Player models
+- Command pattern implementation
+- Game controller logic
+- Progress tracking
+- World generation
+- Helper utilities
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for your changes
+4. Ensure all tests pass (`python tests/run_tests.py`)
+5. Commit your changes
+6. Push to the branch
+7. Open a Pull Request
 
 ## License
 
