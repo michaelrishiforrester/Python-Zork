@@ -1,29 +1,51 @@
 #!/usr/bin/env python3
 """
-ComputerQuest - An Interactive Fiction Game about Computer Architecture
+KodeKloud Computer Quest - Educational Computer Architecture Adventure
 
-Explore a computer system from the inside while hunting for viruses
-and learning about computer architecture along the way.
+Main entry point for the game.
 """
 
-import time
-from game import Game
+import argparse
+import sys
+import os
+import traceback
+from computerquest.game import Game
+from computerquest import __version__
+
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+        description="KodeKloud Computer Quest - Educational Computer Architecture Adventure"
+    )
+    parser.add_argument("--version", action="store_true", help="Show version information")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    return parser.parse_args()
+
+def main():
+    """Main entry point"""
+    args = parse_args()
+    
+    if args.version:
+        print(f"KodeKloud Computer Quest v{__version__}")
+        return
+    
+    try:
+        # Start the game
+        game = Game()
+        
+        # Run the main game loop
+        game.start()
+    except KeyboardInterrupt:
+        print("\nGame interrupted. Exiting...")
+    except Exception as e:
+        print(f"\nError: {e}")
+        if args.debug:
+            traceback.print_exc()
+        else:
+            print("Run with --debug for more information")
+        return 1
+    
+    return 0
 
 if __name__ == "__main__":
-    try:
-        # Display loading message
-        print("Initializing KodeKloud ComputerQuest...\n")
-        time.sleep(1)
-        
-        # Create and start game
-        computer_quest = Game()
-        computer_quest.start()
-        
-    except KeyboardInterrupt:
-        # Handle Ctrl+C gracefully
-        print("\n\nGame terminated. Goodbye!")
-    except Exception as e:
-        # Log other errors
-        print(f"\n\nAn error occurred: {e}")
-        print("Please report this error to the developer.")
-        input("Press Enter to exit...")
+    sys.exit(main())

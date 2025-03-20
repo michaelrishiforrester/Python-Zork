@@ -54,14 +54,24 @@ class Player:
         """
         look around, or look at an item
         """
-        room = self.location #gets room you are in
+        room = self.location  # gets room you are in
+        
+        # Looking at a specific item
         if item != None:
-            try:
-                return(item+room.items[item]) #gets item description and item name then returns it to the processer
-            except:
-                return 'item "'+item+'" not found' #returns item name if item wasnt in the room
+            # First check in the room
+            if item in room.items:
+                item_desc = room.items[item]
+                return f"=== {item} ===\n\n{item_desc}\n\nType 'take {item}' to pick it up, or 'read {item}' if it's readable."
+            # Then check inventory
+            elif item in self.items:
+                item_desc = self.items[item]
+                return f"=== {item} (in your inventory) ===\n\n{item_desc}\n\nType 'drop {item}' to remove it from your inventory."
+            # Not found
+            else:
+                return f'Item "{item}" not found in this location or your inventory.'
+        # Looking around the room
         else:
-            return room.print_details() #returns the rooms description if items were not listed
+            return room.print_details()  # returns the enhanced room description with compass
 
     def take(self, item):
         """

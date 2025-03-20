@@ -1,22 +1,30 @@
-class Room:
-    def __init__(self, n="", d="", l=False, iden="000", save=False):
+"""
+Component class (formerly Room)
+
+Represents a computer component that can be visited by the player.
+"""
+
+from computerquest.config import DIRECTION_NAMES
+
+class Component:
+    def __init__(self, name="", description="", lit=False, iden="000", save=False):
         """
-        Constructor: create a new Room object representing a computer component
-        n: name of component
-        d: description
-        l: if the component is "lit" (accessible without special tools)
+        Constructor: create a new Component object representing a computer component
+        name: name of component
+        description: component description
+        lit: if the component is "lit" (accessible without special tools)
         iden: unique identifier
         save: whether this component's state needs to be saved
         """
-        self.name = n  # Component name
-        self.desc1 = d  # Original description (unchangeable)
-        self.desc = d   # Current description (changeable)
+        self.name = name  # Component name
+        self.desc1 = description  # Original description (unchangeable)
+        self.desc = description   # Current description (changeable)
         self.door = {}  # Special connection points requiring actions to traverse
         self.doors = {} # Regular connections to other components
         self.openDoors = []  # List of all connections with other components
         self.items = {}  # Items/data in this component
         self.play = []  # List of entities in this component
-        self.lit = l    # If component is accessible without special tools
+        self.lit = lit    # If component is accessible without special tools
         self.save = save  # If component state needs saving
         self.id = iden   # Component identifier
         self.security_level = 0  # Security restriction level (0=none, 1=user, 2=admin, 3=system)
@@ -30,10 +38,6 @@ class Room:
         self.power_state = "on"  # Power state of the component (on/off/sleep)
         self.error_state = None  # Any error conditions present
         
-    def name(self):
-        """Returns component name"""
-        return self.name
-    
     def set_specs(self, security=0, data_types=None, speed=0, capacity=0, reliability=0):
         """Set technical specifications for this computer component"""
         self.security_level = security
@@ -58,47 +62,14 @@ class Room:
         # Create connection record
         connect = {other: direction}
         self.openDoors.append(connect)
-        
-        # Update description to mention connection
-        if direction == 'n':
-            dir_name = "North"
-        elif direction == 's':
-            dir_name = "South"
-        elif direction == 'e':
-            dir_name = "East"
-        elif direction == 'w':
-            dir_name = "West"
-        elif direction == 'ne':
-            dir_name = "Northeast"
-        elif direction == 'nw':
-            dir_name = "Northwest"
-        elif direction == 'se':
-            dir_name = "Southeast"
-        elif direction == 'sw':
-            dir_name = "Southwest"
-        elif direction == 'u':
-            dir_name = "Up"
-        elif direction == 'd':
-            dir_name = "Down"
-        else:
-            dir_name = direction
-            
-        # No need to modify description - we'll handle this in print_details
 
     def add_items(self, item):
         """
         Add items/data to this component
         item: dictionary with name/description pairs
         """
-        # Create item list string
-        i = ' You discover: '
-        for k, v in item.items():
-            i += k + ', '
-            
         # Add items to component
         self.items.update(item)
-        
-        # Don't automatically update description - we'll handle this in print_details
 
     def add_door(self, name, d, od, door):
         """
@@ -120,51 +91,82 @@ class Room:
         including connections and contents
         """
         # Component name
-        s = f"{self.name}\n"
+        s = f"== {self.name} ==\n"
         
         # Main description
         s += f"{self.desc}\n"
         
-        # Connections to other components
+        # Create visual compass for directions
         if self.doors:
-            s += "\nConnections:\n"
+            # Get directions
+            has_n = 'n' in self.doors
+            has_s = 's' in self.doors
+            has_e = 'e' in self.doors
+            has_w = 'w' in self.doors
+            has_ne = 'ne' in self.doors
+            has_nw = 'nw' in self.doors
+            has_se = 'se' in self.doors
+            has_sw = 'sw' in self.doors
+            has_u = 'u' in self.doors
+            has_d = 'd' in self.doors
+            
+            # Build compass
+            s += "\n" + "=" * 20 + " AVAILABLE CONNECTIONS " + "=" * 20 + "\n\n"
+            
+            # Show diagonal directions in first row
+            s += "      "
+            s += f"NW: {self.doors['nw'].name}" if has_nw else "     "
+            s += "     "
+            s += f"N: {self.doors['n'].name}" if has_n else "     "
+            s += "     "
+            s += f"NE: {self.doors['ne'].name}" if has_ne else "     "
+            s += "\n"
+            
+            # Middle row for W, current location, E
+            s += "      "
+            s += f"W: {self.doors['w'].name}" if has_w else "     "
+            s += "  <--[ YOU ARE HERE ]-->  "
+            s += f"E: {self.doors['e'].name}" if has_e else "     "
+            s += "\n"
+            
+            # Bottom row for SW, S, SE
+            s += "      "
+            s += f"SW: {self.doors['sw'].name}" if has_sw else "     "
+            s += "     "
+            s += f"S: {self.doors['s'].name}" if has_s else "     "
+            s += "     "
+            s += f"SE: {self.doors['se'].name}" if has_se else "     "
+            s += "\n"
+            
+            # Special directions
+            if has_u or has_d:
+                s += "\nSpecial Connections:\n"
+                if has_u:
+                    s += f"- Up: {self.doors['u'].name}\n"
+                if has_d:
+                    s += f"- Down: {self.doors['d'].name}\n"
+                    
+            # Detailed list of connections
+            s += "\nDetailed Connections:\n"
             for d, r in self.doors.items():
-                # Convert direction code to readable text
-                if d == 'n':
-                    di = 'North'
-                elif d == 's':
-                    di = 'South'
-                elif d == 'e':
-                    di = 'East'
-                elif d == 'w':
-                    di = 'West'
-                elif d == 'u':
-                    di = 'Up'
-                elif d == 'd':
-                    di = 'Down'
-                elif d == 'ne':
-                    di = 'Northeast'
-                elif d == 'nw':
-                    di = 'Northwest'
-                elif d == 'se':
-                    di = 'Southeast'
-                elif d == 'sw':
-                    di = 'Southwest'
-                else:
-                    di = d
+                # Get readable direction name
+                di = DIRECTION_NAMES.get(d, d)
                     
                 # Add connection information
                 s += f"- {di}: {r.name}\n"
         
         # Items/data in this component
         if self.items:
-            s += "\nPresent in this component:\n"
+            s += "\n" + "=" * 20 + " COMPONENTS PRESENT " + "=" * 22 + "\n\n"
             for i in self.items:
                 s += f"- {i}\n"
                 
+            s += "\nType 'examine [component]' or 'take [component]' to interact."
+                
         # Technical details if player has advanced knowledge
         if self.visited:
-            s += "\nComponent Specifications:\n"
+            s += "\n" + "=" * 20 + " TECHNICAL DETAILS " + "=" * 23 + "\n\n"
+            
             if self.security_level > 0:
                 s += f"- Security Level: {self.security_level}\n"
             if self.data_types:
@@ -174,7 +176,9 @@ class Room:
                 for metric, value in self.performance.items():
                     if value > 0:
                         s += f"  * {metric.capitalize()}: {value}/10\n"
-                        
+        else:
+            s += "\nHint: Use 'scan' to learn more technical details about this component."
+                    
         return s
         
     def mark_visited(self):

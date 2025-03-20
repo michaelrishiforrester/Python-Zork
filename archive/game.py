@@ -1255,8 +1255,8 @@ Thank you for playing KodeKloud Computer Quest!
             else:
                 result = "Please specify a valid direction (n, s, e, w, etc.)"
                 
-        # Handle 'look' command
-        elif command == 'look':
+        # Handle 'look' or 'examine' command
+        elif command == 'look' or command == 'examine' or command == 'ex':
             if len(cmd_list) > 1:
                 # Look at specific item in room or inventory
                 item_name = cmd_list[1]
