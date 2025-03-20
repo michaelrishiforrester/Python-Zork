@@ -5,7 +5,7 @@ class Map:
     def __init__(self):
         self.player = None
         self.rooms = {}
-        self.name = "ComputerQuest"
+        self.name = "KodeKloud Computer Quest"
 
     def makeRooms(self):
         """

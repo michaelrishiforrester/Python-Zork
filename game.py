@@ -223,7 +223,7 @@ class ProgressSystem:
 class Game:
     def __init__(self):
         """
-        Constructor: Create a ComputerQuest game
+        Constructor: Create a KodeKloud Computer Quest game
         Initialize the game world and components
         """
         # Initialize computer architecture map from the Map class
@@ -358,9 +358,9 @@ class Game:
                 self.__init__()
                 self.start()
             else:
-                print("\nThank you for playing ComputerQuest! Goodbye!")
+                print("\nThank you for playing KodeKloud Computer Quest! Goodbye!")
         else:
-            print("\nExiting ComputerQuest. Goodbye!")
+            print("\nExiting KodeKloud Computer Quest. Goodbye!")
 
 # This method has been removed since we're now using Map class from map.py
 
@@ -369,10 +369,10 @@ class Game:
     def display_welcome(self):
         """Display welcome message and game introduction"""
         print("=" * 70)
-        print("   █▀▀ █▀█ █▀▄▀█ █▀█ █░█ ▀█▀ █▀▀ █▀█   █▀█ █░█ █▀▀ █▀ ▀█▀   ")
-        print("   █▄▄ █▄█ █░▀░█ █▀▀ █▄█ ░█░ ██▄ █▀▄   ▀▀█ █▄█ ██▄ ▄█ ░█░   ")
+        print("   █▄▀ █▀█ █▀▄ █▀▀ █▄▀ █   █▀█ █░█ █▀▄   █▀▀ █▀█ █▀▄▀█ █▀█ █░█ ▀█▀ █▀▀ █▀█   █▀█ █░█ █▀▀ █▀ ▀█▀")
+        print("   █░█ █▄█ █▄▀ ██▄ █░█ █▄▄ █▄█ █▄█ █▄▀   █▄▄ █▄█ █░▀░█ █▀▀ █▄█ ░█░ ██▄ █▀▄   ▀▀█ █▄█ ██▄ ▄█ ░█░")
         print("=" * 70)
-        print("\nWelcome to the Computer Architecture Quest!")
+        print("\nWelcome to the KodeKloud Computer Architecture Quest!")
         print("\nYou are a security program deployed into a computer system infected with")
         print("multiple viruses. Your mission is to locate and quarantine all viruses")
         print("while learning about computer architecture.")
@@ -671,7 +671,7 @@ class Game:
         fog_map = empty_frame.copy()
         
         # Add title
-        fog_map[1] = "|                   ComputerQuest Exploration Map                |"
+        fog_map[1] = "|             KodeKloud Computer Quest Exploration Map          |"
         
         # Dictionary of positions for each component in the map
         # The position is (row, column) where the marker will be placed
@@ -885,7 +885,7 @@ class Game:
     def show_help(self):
         """Show available commands"""
         help_text = """
-COMPUTERQUEST COMMANDS:
+KODEKLOUD COMPUTER QUEST COMMANDS:
 
 Movement:
   go [direction]   - Move between components (n, s, e, w, ne, sw, etc.)
@@ -1123,7 +1123,7 @@ Viruses typically attempt to hide their presence and propagate to other systems.
         """Display the full motherboard layout of the computer system"""
         motherboard = [
             "+------------------------------------------------------------------+",
-            "|                   ComputerQuest Motherboard Layout               |",
+            "|               KodeKloud Computer Quest Motherboard Layout       |",
             "+------------------------------------------------------------------+",
             "|                                                                  |",
             "|   +----------+     +----------------------------------+          |",
@@ -1208,7 +1208,7 @@ Your final statistics:
 - Computer components visited: {components}/{total_components}
 - Knowledge gained: {knowledge_level}
 
-Thank you for playing ComputerQuest!
+Thank you for playing KodeKloud Computer Quest!
 """.format(
     turns=self.turns,
     components=sum(1 for room in self.game_map.rooms.values() if room.visited),
@@ -1393,7 +1393,7 @@ Thank you for playing ComputerQuest!
             confirm = input("Are you sure you want to exit? Progress will be lost. (y/n): ").lower()
             if confirm in ['y', 'yes']:
                 self.game_over = True
-                result = "Exiting ComputerQuest. Goodbye!"
+                result = "Exiting KodeKloud Computer Quest. Goodbye!"
             else:
                 result = "Continuing mission..."
         

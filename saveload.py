@@ -9,7 +9,7 @@ class SaveLoadSystem:
     """
     def __init__(self, game):
         self.game = game
-        self.save_directory = os.path.join(os.path.expanduser("~"), ".computerquest", "saves")
+        self.save_directory = os.path.join(os.path.expanduser("~"), ".kodekloud_quest", "saves")
         
         # Create save directory if it doesn't exist
         if not os.path.exists(self.save_directory):
@@ -22,7 +22,7 @@ class SaveLoadSystem:
         # Generate default save name if none provided
         if not save_name:
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            save_name = f"computerquest_save_{timestamp}"
+            save_name = f"kodekloud_quest_save_{timestamp}"
         
         # Ensure it has .json extension
         if not save_name.endswith('.json'):

@@ -12,7 +12,7 @@ from game import Game
 if __name__ == "__main__":
     try:
         # Display loading message
-        print("Initializing ComputerQuest...\n")
+        print("Initializing KodeKloud ComputerQuest...\n")
         time.sleep(1)
         
         # Create and start game
