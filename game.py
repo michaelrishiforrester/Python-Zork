@@ -269,6 +269,10 @@ class Game:
             'core1_registers': {'visited': False},
             'core1_l1': {'visited': False},
             'core2': {'visited': False},
+            'core2_cu': {'visited': False},
+            'core2_alu': {'visited': False},
+            'core2_registers': {'visited': False},
+            'core2_l1': {'visited': False},
             
             # Cache hierarchy
             'l2_cache1': {'visited': False},
@@ -677,6 +681,10 @@ class Game:
             'core1_registers': (11, 13),     # Core 1 Registers
             'core1_l1': (11, 17),            # Core 1 L1
             'core2': (9, 38),                # Core 2
+            'core2_cu': (10, 36),            # Core 2 CU
+            'core2_alu': (10, 40),           # Core 2 ALU
+            'core2_registers': (11, 36),     # Core 2 Registers
+            'core2_l1': (11, 40),            # Core 2 L1
             'l2_cache1': (15, 15),           # L2 Cache 1
             'l2_cache2': (15, 38),           # L2 Cache 2
             'l3_cache': (19, 30),            # L3 Cache
@@ -706,7 +714,8 @@ class Game:
             'kernel': ['kernel'],
             'virtual_memory': ['virtual_memory'],
             'core1': ['core1'],
-            'core_components': ['core1_cu', 'core1_alu', 'core1_registers', 'core1_l1'],
+            'core_components': ['core1_cu', 'core1_alu', 'core1_registers', 'core1_l1', 
+                               'core2_cu', 'core2_alu', 'core2_registers', 'core2_l1'],
             'core2': ['core2'],
             'l2_cache': ['l2_cache1', 'l2_cache2'],
             'l3_cache': ['l3_cache'],

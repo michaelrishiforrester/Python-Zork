@@ -70,7 +70,37 @@ class Map:
         )
         self.rooms["core2"] = self.core2
         
-        # Add other Core 2 components similarly...
+        self.core2_cu = room.Room(
+            "Core 2 Control Unit",
+            "The control unit of Core 2 coordinates operations, fetching and decoding instructions. Status indicators flash in complex patterns as it orchestrates the execution pipeline.",
+            True,
+            "CU002"
+        )
+        self.rooms["core2_cu"] = self.core2_cu
+        
+        self.core2_alu = room.Room(
+            "Core 2 ALU",
+            "The Arithmetic Logic Unit of Core 2 performs all mathematical and logical operations. Numbers and boolean values flow through circuits as computations occur at incredible speed.",
+            True,
+            "ALU002"
+        )
+        self.rooms["core2_alu"] = self.core2_alu
+        
+        self.core2_registers = room.Room(
+            "Core 2 Registers",
+            "These small, ultra-fast storage locations hold data being actively processed by Core 2. Each register glows with changing values as operations proceed.",
+            True,
+            "REG002"
+        )
+        self.rooms["core2_registers"] = self.core2_registers
+        
+        self.core2_l1 = room.Room(
+            "Core 2 L1 Cache",
+            "The Level 1 cache for Core 2 - the fastest and smallest memory in the hierarchy. Split into instruction and data sections, it provides near-instant access to frequently used information.",
+            True,
+            "L1C002"
+        )
+        self.rooms["core2_l1"] = self.core2_l1
         
         # Level 2 Cache
         self.l2_cache1 = room.Room(
@@ -291,6 +321,19 @@ class Map:
             'register_log': 'A log showing recent register state changes. Some unusual patterns are highlighted.'
         })
         
+        # Add items to Core 2 components
+        self.core2_cu.add_items({
+            'parallel_instructions': 'A guide showing how the control unit manages parallel instruction execution across multiple cores.'
+        })
+        
+        self.core2_alu.add_items({
+            'vector_operations': 'Documentation about SIMD (Single Instruction, Multiple Data) vector operations that process multiple data points simultaneously.'
+        })
+        
+        self.core2_registers.add_items({
+            'thread_state': 'A snapshot of register states showing how different threads maintain separate execution contexts.'
+        })
+        
         # Clues and viruses - note the new locations matching the updated architecture
         self.core1_alu.add_items({
             'strange_calculation': 'A record of unusual calculation patterns that seem to be used for encryption.'
@@ -355,11 +398,19 @@ class Map:
         self.core1_registers.connect_to(self.core1, 'e')
         self.core1_l1.connect_to(self.core1, 'n')
         
-        # Connect Core 2 components (similar to Core 1)
-        # Note: Core 2 doesn't have its internal components fully implemented
-        # But we need to ensure Core 2 has a way back to CPU Package
+        # Connect Core 2 to its components
+        self.core2.connect_to(self.core2_cu, 'n')
+        self.core2.connect_to(self.core2_alu, 'e')
+        self.core2.connect_to(self.core2_registers, 'w')
+        self.core2.connect_to(self.core2_l1, 's')
+        self.core2.connect_to(self.l2_cache2, 'sw')
         self.core2.connect_to(self.cpu_package, 'sw')
-        self.core2.connect_to(self.l2_cache2, 's')
+        
+        # Add return connections for Core 2 components
+        self.core2_cu.connect_to(self.core2, 's')
+        self.core2_alu.connect_to(self.core2, 'w')
+        self.core2_registers.connect_to(self.core2, 'e')
+        self.core2_l1.connect_to(self.core2, 'n')
         
         # Connect L2 and L3 caches
         self.l2_cache1.connect_to(self.core1, 'nw')  # Return path to Core 1
