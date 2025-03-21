@@ -180,6 +180,18 @@ class QuitCommand(Command):
             return ""
         else:
             return "Continuing mission..."
+            
+class ClearCommand(Command):
+    """Command to clear the screen"""
+    def execute(self):
+        # Import os here to maintain encapsulation
+        import os
+        
+        # Clear screen based on OS (Windows vs Unix-like)
+        os.system('cls' if os.name == 'nt' else 'clear')
+        
+        # Return the current location description
+        return self.game.player.look()
 
 class MapCommand(Command):
     """Command to display map"""
@@ -316,10 +328,47 @@ class SimulateCommand(Command):
             # This is an action for an already running simulation
             return self.game.handle_simulation(sim_action)
 
+class QuickHelpCommand(Command):
+    """Command to display a quick help overlay"""
+    def execute(self):
+        from computerquest.utils.helpers import Colors
+        
+        quick_help = f"""┏━━━━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}{Colors.BOLD}QUICK HELP{Colors.RESET} ━━━━━━━━━━━━━━━━━━━━━┓
+│                                                          │
+│  {Colors.BOLD}Movement:{Colors.RESET}                                               │
+│    {Colors.GREEN}n, s, e, w{Colors.RESET} - Go North, South, East, West             │
+│    {Colors.GREEN}ne, nw, se, sw{Colors.RESET} - Go Northeast, Northwest, etc.       │
+│    {Colors.CYAN}u, d{Colors.RESET} - Go Up, Down                                   │
+│                                                          │
+│  {Colors.BOLD}Basic Commands:{Colors.RESET}                                         │
+│    {Colors.GREEN}l, look{Colors.RESET} - Examine your surroundings or an item        │
+│    {Colors.GREEN}i{Colors.RESET} - Check your inventory                              │
+│    {Colors.GREEN}t [item]{Colors.RESET} - Take an item                               │
+│    {Colors.GREEN}m{Colors.RESET} - Show map                                          │
+│    {Colors.GREEN}c{Colors.RESET} - Clear screen                                      │
+│    {Colors.GREEN}h{Colors.RESET} or {Colors.GREEN}help{Colors.RESET} - Detailed help                             │
+│    {Colors.GREEN}q{Colors.RESET} - Quit game                                         │
+│                                                          │
+│  {Colors.BOLD}Security:{Colors.RESET}                                               │
+│    {Colors.GREEN}s, scan{Colors.RESET} - Scan for viruses                            │
+│    {Colors.GREEN}quarantine [virus]{Colors.RESET} - Contain a discovered virus       │
+│                                                          │
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"""
+        return quick_help
+
 class CommandProcessor:
     """Processes user commands using Command pattern"""
     def __init__(self, game):
         self.game = game
+        
+        # List of direction words for tab completion
+        self.direction_words = [
+            'north', 'south', 'east', 'west', 
+            'northeast', 'northwest', 'southeast', 'southwest',
+            'up', 'down',
+            'n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw', 'u', 'd'
+        ]
+        
         self.commands = {
             'go': MoveCommand,
             'move': MoveCommand,
@@ -344,20 +393,25 @@ class CommandProcessor:
             'down': self._direction_command('down'),
             'd': self._direction_command('down'),
             'look': LookCommand,
+            'l': LookCommand,
             'examine': LookCommand,
             'ex': LookCommand,
             'take': TakeCommand,
+            't': TakeCommand,
             'get': TakeCommand,
             'drop': DropCommand,
             'inventory': InventoryCommand,
             'i': InventoryCommand,
             'scan': ScanCommand,
+            's': ScanCommand,
             'advscan': AdvancedScanCommand,
             'advanced-scan': AdvancedScanCommand,
             'advanced_scan': AdvancedScanCommand,
             'analyze': AnalyzeCommand,
             'quarantine': QuarantineCommand,
             'help': HelpCommand,
+            'h': HelpCommand,
+            '?': QuickHelpCommand,
             'quit': QuitCommand,
             'exit': QuitCommand,
             'q': QuitCommand,
@@ -366,6 +420,7 @@ class CommandProcessor:
             'motherboard': MotherboardCommand,
             'mb': MotherboardCommand,
             'read': ReadCommand,
+            'r': ReadCommand,
             'about': AboutCommand,
             'status': StatusCommand,
             'progress': StatusCommand,
@@ -382,6 +437,9 @@ class CommandProcessor:
             'viz': VisualizeCommand,
             'simulate': SimulateCommand,
             'sim': SimulateCommand,
+            'clear': ClearCommand,
+            'cls': ClearCommand,
+            'c': ClearCommand,
         }
     
     def _direction_command(self, direction):
@@ -390,14 +448,56 @@ class CommandProcessor:
             return MoveCommand(game, [direction])
         return command_factory
     
+    def preprocess_command(self, user_input):
+        """
+        Preprocess command for common typos and normalization
+        Returns corrected command string
+        """
+        # Remove extra whitespace
+        processed = user_input.strip().lower()
+        
+        # Handle common typos and variations
+        typo_corrections = {
+            # Direction typos
+            'nort': 'north', 'norht': 'north', 'nrth': 'north', 'noth': 'north',
+            'sout': 'south', 'souht': 'south', 'suth': 'south', 'souh': 'south',
+            'easr': 'east', 'eas': 'east', 'esat': 'east', 'est': 'east',
+            'wesr': 'west', 'wets': 'west', 'wst': 'west', 'wes': 'west',
+            'norteast': 'northeast', 'northeat': 'northeast', 'norhteast': 'northeast',
+            'nortwest': 'northwest', 'northwet': 'northwest', 'norhtwest': 'northwest',
+            'souteast': 'southeast', 'southeat': 'southeast', 'souhteast': 'southeast',
+            'soutwest': 'southwest', 'southwet': 'southwest', 'souhtwest': 'southwest',
+            
+            # Command typos
+            'lok': 'look', 'loook': 'look', 'luk': 'look', 'loo': 'look',
+            'invntory': 'inventory', 'invetory': 'inventory', 'inv': 'inventory',
+            'tak': 'take', 'tke': 'take', 'tkae': 'take',
+            'hlp': 'help', 'hlep': 'help', 'hel': 'help',
+            'mp': 'map', 'mpa': 'map',
+            'qit': 'quit', 'qt': 'quit', 'ext': 'exit',
+            'scn': 'scan', 'sacan': 'scan',
+            'clr': 'clear', 'clar': 'clear', 'clera': 'clear',
+        }
+        
+        # Check if the first word is a known typo
+        words = processed.split()
+        if words and words[0] in typo_corrections:
+            words[0] = typo_corrections[words[0]]
+            processed = ' '.join(words)
+            
+        return processed
+        
     def process(self, user_input):
         """Process a user command"""
         # Skip empty inputs
         if not user_input.strip():
             return "Please enter a command. Type 'help' for available commands."
             
+        # Preprocess command for typos
+        processed_input = self.preprocess_command(user_input)
+            
         # Split into command words
-        cmd_words = user_input.lower().split()
+        cmd_words = processed_input.split()
         command = cmd_words[0]
         args = cmd_words[1:]
         
@@ -426,4 +526,16 @@ class CommandProcessor:
                     
             return result
         else:
-            return f"Command '{command}' not recognized. Type 'help' for available commands."
+            # Try to find similarly named commands (fuzzy matching)
+            from computerquest.utils.helpers import Colors
+            similar_commands = []
+            for cmd in self.commands.keys():
+                # Simple similarity check - more than half of letters match
+                if len(cmd) > 2 and sum(c in command for c in cmd) >= len(cmd) // 2:
+                    similar_commands.append(cmd)
+            
+            if similar_commands:
+                suggestions = ', '.join([f"{Colors.GREEN}{cmd}{Colors.RESET}" for cmd in similar_commands[:3]])
+                return f"Command '{command}' not recognized. Did you mean: {suggestions}?\nType 'help' for available commands."
+            else:
+                return f"Command '{command}' not recognized. Type 'help' for available commands."

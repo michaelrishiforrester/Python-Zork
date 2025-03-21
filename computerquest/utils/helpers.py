@@ -4,6 +4,21 @@ Helper utilities for KodeKloud Computer Quest
 import textwrap
 from computerquest.config import DIRECTION_NAMES
 
+# ANSI color codes for terminal output
+class Colors:
+    RESET = "\033[0m"
+    BLACK = "\033[30m"
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    MAGENTA = "\033[35m"
+    CYAN = "\033[36m"
+    WHITE = "\033[37m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    REVERSED = "\033[7m"
+
 def prefix_match(prefix, candidates):
     """
     Match a prefix with candidates, return the full string if unique match is found
@@ -129,31 +144,36 @@ def format_look_output(location, connections, items, technical_details=None):
         str: Formatted look output
     """
     output = []
+    available_directions = connections.keys()
     
-    # Location header
+    # Location header with highlight for current location
     output.append("┏" + "━" * 20 + " LOCATION " + "━" * 20 + "┓")
-    output.append(f"  {location.name}")
+    output.append(f"  {Colors.YELLOW}{Colors.BOLD}{location.name}{Colors.RESET}")
     output.append("┗" + "━" * 51 + "┛\n")
     
     # Description
-    output.append("Description:")
+    output.append(f"{Colors.BOLD}Description:{Colors.RESET}")
     description_lines = textwrap.wrap(location.desc, width=70)
     output.extend([f"  {line}" for line in description_lines])
     output.append("")
     
-    # Connections
+    # Connections with color-coded directions
     output.append("┏" + "━" * 18 + " AVAILABLE CONNECTIONS " + "━" * 18 + "┓")
     
-    # Format regular connections
+    # Format regular connections with color coding
     reg_connections = []
     for direction, connected_room in connections.items():
         dir_name = DIRECTION_NAMES.get(direction, direction).upper()
+        
+        # Color code the direction
+        colored_dir = f"{Colors.GREEN}[{dir_name[0]}]{dir_name[1:]}{Colors.RESET}" if len(dir_name) > 1 else f"{Colors.GREEN}[{dir_name}]orth{Colors.RESET}"
+        
         if len(dir_name) == 1:
-            reg_connections.append(f"[{dir_name}]orth: {connected_room.name}")
+            reg_connections.append(f"{colored_dir}: {connected_room.name}")
         elif len(dir_name) == 2:
-            reg_connections.append(f"[{dir_name}]: {connected_room.name}")
+            reg_connections.append(f"{Colors.GREEN}[{dir_name}]{Colors.RESET}: {connected_room.name}")
         else:
-            reg_connections.append(f"[{dir_name[0]}]{dir_name[1:]}: {connected_room.name}")
+            reg_connections.append(f"{colored_dir}: {connected_room.name}")
     
     # Split into lines of 2-3 connections each
     conn_lines = []
@@ -163,7 +183,21 @@ def format_look_output(location, connections, items, technical_details=None):
     output.extend(conn_lines)
     output.append("┗" + "━" * 60 + "┛\n")
     
-    # Create ASCII directional compass
+    # Create a mapping of direction codes to compass positions
+    direction_map = {
+        'n': (0, 2),   # North
+        's': (4, 2),   # South
+        'e': (2, 4),   # East
+        'w': (2, 0),   # West
+        'ne': (1, 3),  # Northeast
+        'nw': (1, 1),  # Northwest
+        'se': (3, 3),  # Southeast
+        'sw': (3, 1),  # Southwest
+        'u': None,     # Up (will be handled separately)
+        'd': None      # Down (will be handled separately)
+    }
+    
+    # Create the compass with arrows for available paths
     compass = [
         "      N      ",
         "    NW NE    ",
@@ -172,20 +206,81 @@ def format_look_output(location, connections, items, technical_details=None):
         "      S      "
     ]
     
-    # Add directional compass only if has enough directions
-    if len(connections) > 1:
-        output.append("  Directional Compass:")
-        available_directions = connections.keys()
-        for line in compass:
-            output.append(f"  {line}")
+    # Convert to list of lists for easier manipulation
+    compass_grid = [list(line) for line in compass]
     
-    # Components
+    # Get all possible directions for showing blockers
+    all_directions = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']
+    
+    # First, mark unavailable directions with blockers
+    for direction in all_directions:
+        if direction not in available_directions and direction in direction_map and direction_map[direction]:
+            row, col = direction_map[direction]
+            compass_grid[row][col] = '█'  # Blocker for unavailable direction
+    
+    # Then add arrows for available directions
+    for direction in available_directions:
+        if direction in direction_map and direction_map[direction]:
+            row, col = direction_map[direction]
+            # Replace with colored arrow
+            if direction == 'n':
+                compass_grid[row][col] = f"{Colors.GREEN}↑{Colors.RESET}"
+            elif direction == 's':
+                compass_grid[row][col] = f"{Colors.GREEN}↓{Colors.RESET}"
+            elif direction == 'e':
+                compass_grid[row][col] = f"{Colors.GREEN}→{Colors.RESET}"
+            elif direction == 'w':
+                compass_grid[row][col] = f"{Colors.GREEN}←{Colors.RESET}"
+            elif direction == 'ne':
+                compass_grid[row][col] = f"{Colors.GREEN}↗{Colors.RESET}"
+            elif direction == 'nw':
+                compass_grid[row][col] = f"{Colors.GREEN}↖{Colors.RESET}"
+            elif direction == 'se':
+                compass_grid[row][col] = f"{Colors.GREEN}↘{Colors.RESET}"
+            elif direction == 'sw':
+                compass_grid[row][col] = f"{Colors.GREEN}↙{Colors.RESET}"
+    
+    # Convert back to strings but keep color codes
+    enhanced_compass = [''.join(row) for row in compass_grid]
+    
+    # Add up/down indicators if available with color coding
+    up_down_indicators = []
+    if 'u' in available_directions:
+        up_down_indicators.append(f"{Colors.CYAN}[U]p{Colors.RESET}: {connections['u'].name}")
+    if 'd' in available_directions:
+        up_down_indicators.append(f"{Colors.CYAN}[D]own{Colors.RESET}: {connections['d'].name}")
+    
+    # Add directional compass with improved formatting
+    if len(connections) > 0:
+        output.append(f"  {Colors.BOLD}Directional Compass:{Colors.RESET}")
+        for line in enhanced_compass:
+            output.append(f"  {line}")
+        
+        if up_down_indicators:
+            output.append("  " + "  ".join(up_down_indicators))
+    
+    # Add breadcrumb path display with highlighting
+    if hasattr(location, 'parent') and location.parent:
+        path_parts = []
+        current = location
+        while hasattr(current, 'parent') and current.parent:
+            path_parts.insert(0, current.parent.name)
+            current = current.parent
+        
+        if path_parts:
+            # Format the breadcrumb with color highlighting for the current location
+            breadcrumb_parts = [f"{part}" for part in path_parts]
+            breadcrumb_parts.append(f"{Colors.YELLOW}{location.name}{Colors.RESET}")
+            breadcrumb = f" {Colors.BLUE}→{Colors.RESET} ".join(breadcrumb_parts)
+            output.append(f"\n{Colors.BOLD}Location Path:{Colors.RESET} {breadcrumb}")
+    
+    # Components with highlighting
     if items:
         output.append("\n┏" + "━" * 20 + " COMPONENTS " + "━" * 20 + "┓")
         for item in items:
-            output.append(f"  • {item}")
+            output.append(f"  • {Colors.CYAN}{item}{Colors.RESET}")
         output.append("┗" + "━" * 51 + "┛")
-        output.append("\nType 'examine [component]' or 'take [component]' to interact.\n")
+        output.append(f"\nType '{Colors.GREEN}examine{Colors.RESET} [component]' or '{Colors.GREEN}take{Colors.RESET} [component]' to interact.\n")
     
     # Technical details if visited
     if technical_details:
@@ -194,11 +289,22 @@ def format_look_output(location, connections, items, technical_details=None):
             output.append(f"  {line}")
         output.append("┗" + "━" * 51 + "┛")
     
-    # Status line
+    # Status line with color-coded health bar
     total_viruses = 5  # Total number of viruses from config
+    health_level = 10  # Placeholder for health level (max 10)
+    health_bar = f"{Colors.GREEN}{'█' * health_level}{Colors.RESET}"
+    
+    found_viruses = len(location.items.get('found_viruses', []))
+    quar_viruses = len(location.items.get('quarantined_viruses', []))
+    
+    virus_color = Colors.RED if found_viruses > quar_viruses else Colors.GREEN
+    
     output.append("\n" + "━" * 70)
-    output.append(f"  Status: Items: {len(items)}/8 | Viruses: {len(location.items.get('found_viruses', []))}/{total_viruses} Found, {len(location.items.get('quarantined_viruses', []))}/{total_viruses} Quarantined")
-    output.append("  Commands: [L]ook [I]nventory [T]ake [H]elp [M]ap [Q]uit")
+    output.append(f"  Status: Health: {health_bar} | Items: {len(items)}/8 | Viruses: {virus_color}{found_viruses}/{total_viruses} Found, {quar_viruses}/{total_viruses} Quarantined{Colors.RESET}")
     output.append("━" * 70)
+    
+    # Command shortcuts with color highlighting
+    output.append(f"\nShortcuts: {Colors.GREEN}[N]{Colors.RESET}orth {Colors.GREEN}[S]{Colors.RESET}outh {Colors.GREEN}[E]{Colors.RESET}ast {Colors.GREEN}[W]{Colors.RESET}est {Colors.GREEN}[NE]{Colors.RESET} {Colors.GREEN}[SE]{Colors.RESET} {Colors.GREEN}[SW]{Colors.RESET} {Colors.GREEN}[NW]{Colors.RESET} {Colors.GREEN}[U]{Colors.RESET}p {Colors.GREEN}[D]{Colors.RESET}own")
+    output.append(f"Commands: {Colors.GREEN}[L]{Colors.RESET}ook {Colors.GREEN}[I]{Colors.RESET}nventory {Colors.GREEN}[T]{Colors.RESET}ake {Colors.GREEN}[H]{Colors.RESET}elp {Colors.GREEN}[M]{Colors.RESET}ap {Colors.GREEN}[C]{Colors.RESET}lear {Colors.GREEN}[Q]{Colors.RESET}uit")
     
     return "\n".join(output)

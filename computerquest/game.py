@@ -153,14 +153,104 @@ class Game:
         for component in all_components:
             self.map_grid[component] = {'visited': False}
         
+    def setup_readline(self):
+        """
+        Setup readline for command history and tab completion
+        """
+        try:
+            import readline
+            import rlcompleter
+            
+            # Define our custom completer function for game commands
+            def completer(text, state):
+                # First, try to complete commands
+                command_options = [cmd for cmd in self.command_processor.commands.keys() 
+                                  if cmd.startswith(text)]
+                
+                # Then, try to complete directions
+                direction_options = [dir_name for dir_name in self.command_processor.direction_words
+                                    if dir_name.startswith(text)]
+                
+                # Finally, try to complete items in the current location or inventory
+                item_options = []
+                if self.player and self.player.location:
+                    # Items in current location
+                    item_options.extend([item for item in self.player.location.items.keys() 
+                                         if isinstance(item, str) and item.startswith(text)])
+                    
+                if self.player:
+                    # Items in inventory
+                    item_options.extend([item for item in self.player.items.keys() 
+                                         if isinstance(item, str) and item.startswith(text)])
+                
+                # Special cases for specific commands
+                words = readline.get_line_buffer().split()
+                if len(words) > 0 and words[0] in ['take', 'get', 't']:
+                    # Only show items in the room for take command
+                    if self.player and self.player.location:
+                        item_options = [item for item in self.player.location.items.keys() 
+                                        if isinstance(item, str) and item.startswith(text)]
+                
+                # Combine all options
+                options = command_options + direction_options + item_options
+                
+                # Return the state-th completion or None if no more completions
+                if state < len(options):
+                    return options[state]
+                return None
+            
+            # Set the completer function
+            readline.set_completer(completer)
+            
+            # Set the word delimiters for completion
+            readline.set_completer_delims(' \t\n;')
+            
+            # Use tab for completion
+            readline.parse_and_bind('tab: complete')
+            
+            # Set history file
+            import os
+            histfile = os.path.join(os.path.expanduser("~"), ".computerquest_history")
+            try:
+                readline.read_history_file(histfile)
+                # Set history length
+                readline.set_history_length(100)
+            except FileNotFoundError:
+                pass
+            
+            # Save history on exit
+            import atexit
+            atexit.register(readline.write_history_file, histfile)
+            
+            return True
+        except (ImportError, AttributeError):
+            # Readline is not available on all platforms
+            print("Note: Command history and tab completion are not available on this system.")
+            return False
+
     def start(self):
         """
         Main game loop
         """
+        # Note: No longer clearing the screen at startup
+        # The welcome screen is displayed in __init__
+        
+        # Setup readline for command history and tab completion
+        has_readline = self.setup_readline()
+        if has_readline:
+            from computerquest.utils.helpers import Colors
+            print(f"\n{Colors.GREEN}TIP:{Colors.RESET} Use {Colors.BOLD}Tab{Colors.RESET} for command completion and {Colors.BOLD}Up/Down arrows{Colors.RESET} for command history!")
+        
         # Loop until victory or quit
         while not self.game_over:
             # Get user input
-            user_input = input("\n> ").strip()
+            try:
+                user_input = input("\n> ").strip()
+            except (EOFError, KeyboardInterrupt):
+                # Handle Ctrl+D or Ctrl+C gracefully
+                print("\nExiting...")
+                self.game_over = True
+                break
             
             # Skip empty inputs
             if not user_input:
@@ -168,6 +258,10 @@ class Game:
                 
             # Process command through the command processor
             response = self.command_processor.process(user_input)
+            
+            # Clear the screen before showing the new output (except for the first command)
+            import os
+            os.system('cls' if os.name == 'nt' else 'clear')
             
             # Display result
             print(f"\n{response}")
@@ -187,36 +281,56 @@ class Game:
 
     def display_welcome(self):
         """Display welcome message and game introduction"""
-        print("━" * 70)
-        print("   █▄▀ █▀█ █▀▄ █▀▀ █▄▀ █   █▀█ █░█ █▀▄   █▀▀ █▀█ █▀▄▀█ █▀█ █░█ ▀█▀ █▀▀ █▀█   █▀█ █░█ █▀▀ █▀ ▀█▀")
-        print("   █░█ █▄█ █▄▀ ██▄ █░█ █▄▄ █▄█ █▄█ █▄▀   █▄▄ █▄█ █░▀░█ █▀▀ █▄█ ░█░ ██▄ █▀▄   ▀▀█ █▄█ ██▄ ▄█ ░█░")
-        print("━" * 70)
-        print("\n┏━━━━━━━━━━━━━━━━━━━━━━ MISSION BRIEFING ━━━━━━━━━━━━━━━━━━━━━━┓")
-        print("  Welcome to the KodeKloud Computer Architecture Quest!")
-        print("\n  You are a security program deployed into a computer system infected with")
-        print("  multiple viruses. Your mission is to locate and quarantine all viruses")
-        print("  while learning about computer architecture.")
-        print("\n  As you travel through the system, from CPU to memory to storage and beyond,")
-        print("  you'll discover how each component works and how they interconnect.")
-        print("\n  Use the 'help' command to see available actions.")
-        print("\n  Good luck, Security Program! The system's integrity depends on you.")
-        print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+        from computerquest.utils.helpers import Colors
         
-        # Command shortcuts
-        print("\n┏━━━━━━━━━━━━━━━━━━━━━━ COMMAND SHORTCUTS ━━━━━━━━━━━━━━━━━━━━━━┓")
-        print("  Movement: [N]orth [S]outh [E]ast [W]est [NE] [SE] [SW] [NW] [U]p [D]own")
-        print("  Commands: [L]ook [I]nventory [T]ake [H]elp [M]ap [Q]uit")
-        print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+        print("━" * 78)
+        print(f"{Colors.CYAN}   █▄▀ █▀█ █▀▄ █▀▀ █▄▀ █   █▀█ █░█ █▀▄   █▀▀ █▀█ █▀▄▀█ █▀█ █░█ ▀█▀ █▀▀ █▀█   █▀█ █░█ █▀▀ █▀ ▀█▀{Colors.RESET}")
+        print(f"{Colors.CYAN}   █░█ █▄█ █▄▀ ██▄ █░█ █▄▄ █▄█ █▄█ █▄▀   █▄▄ █▄█ █░▀░█ █▀▀ █▄█ ░█░ ██▄ █▀▄   ▀▀█ █▄█ ██▄ ▄█ ░█░{Colors.RESET}")
+        print("━" * 78)
         
-        # Status line
-        print("\n" + "━" * 70)
-        print(f"  Status: Health: ██████████ | Items: 0/8 | Viruses: 0/5 Found, 0/5 Quarantined")
-        print("━" * 70)
+        print(f"\n┏━━━━━━━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}{Colors.BOLD}MISSION BRIEFING{Colors.RESET} ━━━━━━━━━━━━━━━━━━━━━━━━┓")
+        print("│                                                                    │")
+        print(f"│  Welcome to the {Colors.CYAN}KodeKloud Computer Architecture Quest!{Colors.RESET}             │")
+        print("│                                                                    │")
+        print("│  You are a security program deployed into a computer system        │")
+        print(f"│  infected with multiple {Colors.RED}viruses{Colors.RESET}. Your mission is to locate and     │")
+        print("│  quarantine all viruses while learning about computer architecture.│")
+        print("│                                                                    │")
+        print("│  As you travel through the system, from CPU to memory to storage   │")
+        print("│  and beyond, you'll discover how each component works and how      │")
+        print("│  they interconnect.                                                │")
+        print("│                                                                    │")
+        print(f"│  Use the '{Colors.GREEN}help{Colors.RESET}' command to see available actions.                  │")
+        print("│                                                                    │")
+        print(f"│  Good luck, Security Program! The system's integrity depends on you│")
+        print("│                                                                    │")
+        print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+        
+        # Command shortcuts with improved formatting
+        print(f"\n┏━━━━━━━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}COMMAND SHORTCUTS{Colors.RESET} ━━━━━━━━━━━━━━━━━━━━━━━━┓")
+        print("│                                                                    │")
+        print(f"│  Movement: {Colors.GREEN}[N]{Colors.RESET}orth {Colors.GREEN}[S]{Colors.RESET}outh {Colors.GREEN}[E]{Colors.RESET}ast {Colors.GREEN}[W]{Colors.RESET}est {Colors.GREEN}[NE]{Colors.RESET} {Colors.GREEN}[SE]{Colors.RESET} {Colors.GREEN}[SW]{Colors.RESET} {Colors.GREEN}[NW]{Colors.RESET}      │")
+        print(f"│           {Colors.CYAN}[U]{Colors.RESET}p {Colors.CYAN}[D]{Colors.RESET}own                                              │")
+        print("│                                                                    │")
+        print(f"│  Actions: {Colors.GREEN}[L]{Colors.RESET}ook {Colors.GREEN}[I]{Colors.RESET}nventory {Colors.GREEN}[T]{Colors.RESET}ake {Colors.GREEN}[H]{Colors.RESET}elp {Colors.GREEN}[M]{Colors.RESET}ap {Colors.GREEN}[C]{Colors.RESET}lear {Colors.GREEN}[Q]{Colors.RESET}uit   │")
+        print(f"│           {Colors.GREEN}[S]{Colors.RESET}can {Colors.GREEN}[Q]{Colors.RESET}uarantine                                      │")
+        print("│                                                                    │")
+        print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+        
+        # Status line with enhanced visual style
+        print("\n" + "━" * 78)
+        print(f"  Status: Health: {Colors.GREEN}██████████{Colors.RESET} | Items: 0/8 | Viruses: {Colors.GREEN}0/5 Found, 0/5 Quarantined{Colors.RESET}")
+        print("━" * 78)
+        
+        # Help overlay hint
+        print(f"\n  Type a command or '{Colors.GREEN}?{Colors.RESET}' for quick help.")
         
         # Show initial location using new format
         from computerquest.utils.helpers import format_look_output
         print(f"\n{format_look_output(self.player.location, self.player.location.doors, list(self.player.location.items.keys()))}")
-        print("\nType 'help' for a list of commands.")
+        
+        # Navigation hint
+        print(f"\nType '{Colors.GREEN}help{Colors.RESET}' for a list of commands or use shortcuts like '{Colors.GREEN}n{Colors.RESET}' for north, '{Colors.GREEN}l{Colors.RESET}' for look.")
 
     def move(self, direction):
         """
@@ -312,64 +426,71 @@ class Game:
             
     def show_help(self):
         """Show available commands"""
-        help_text = """┏━━━━━━━━━━━━━━━━━━ KODEKLOUD COMPUTER QUEST COMMANDS ━━━━━━━━━━━━━━━━━━┓
-
-  Movement:
-    go [direction]   - Move between components (n, s, e, w, ne, sw, etc.)
-    [direction]      - You can also just type the direction (north, s, east, w)
-
-  Exploration:
-    look, l          - Examine your current location
-    look [item]      - Examine a specific item
-    read [item]      - Read text content of an item
-    map, m           - Display a map of visited computer components
-    motherboard, mb  - Show the motherboard layout of the computer system
-
-  Inventory:
-    inventory, i     - List items in your storage
-    take [item], t   - Add an item to your inventory
-    drop [item]      - Remove an item from your inventory
-
-  Security Functions:
-    scan             - Search for viruses in current location
-    scan [item]      - Check if a specific item contains a virus
-    advscan          - Perform advanced scan (requires decoder_tool)
-    advscan [item]   - Perform advanced scan on specific item
-    analyze [item]   - Deeply analyze an item for hidden properties
-    quarantine [virus] - Contain a discovered virus
-
-  Information:
-    status           - Check your virus discovery progress
-    knowledge        - View your computer architecture knowledge
-    about [topic]    - Get information about a computer component
-  
-  Progress Tracking:
-    achievements     - View your achievements and progress report
-    stats            - Alternative command for achievements
-  
-  Educational Features:
-    visualize [comp] - Show visualization of a component (cpu, memory, network, storage)
-    viz [comp]       - Shorthand for visualize
-    simulate cpu     - Start CPU pipeline simulation minigame
-    simulate memory  - Start memory hierarchy simulation
-    simulate step    - Advance simulation by one step
-    simulate toggle  - Toggle between simulation modes
-    simulate reset   - Reset the simulation
-  
-  Save/Load:
-    save [name]      - Save your game progress (optional name)
-    load [name]      - Load a saved game
-    saves            - List all available save files
-    deletesave [name] - Delete a saved game
-  
-  System:
-    help, h, ?       - Show this help message
-    quit, q, exit    - Exit the game
-
+        from computerquest.utils.helpers import Colors
+        
+        help_text = f"""┏━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}{Colors.BOLD}KODEKLOUD COMPUTER QUEST COMMANDS{Colors.RESET} ━━━━━━━━━━━━━━━━━━┓
+│                                                                          │
+│  {Colors.BOLD}Movement:{Colors.RESET}                                                               │
+│    go [direction]   - Move between components (n, s, e, w, ne, sw, etc.) │
+│    [direction]      - You can also just type the direction (n, s, e, w)  │
+│                                                                          │
+│  {Colors.BOLD}Exploration:{Colors.RESET}                                                            │
+│    {Colors.GREEN}look, l{Colors.RESET}          - Examine your current location                      │
+│    {Colors.GREEN}look [item]{Colors.RESET}      - Examine a specific item                            │
+│    {Colors.GREEN}read [item], r{Colors.RESET}   - Read text content of an item                       │
+│    {Colors.GREEN}map, m{Colors.RESET}           - Display a map of visited computer components       │
+│    {Colors.GREEN}motherboard, mb{Colors.RESET}  - Show the motherboard layout of the computer system │
+│                                                                          │
+│  {Colors.BOLD}Inventory:{Colors.RESET}                                                              │
+│    {Colors.GREEN}inventory, i{Colors.RESET}     - List items in your storage                         │
+│    {Colors.GREEN}take [item], t{Colors.RESET}   - Add an item to your inventory                      │
+│    {Colors.GREEN}drop [item]{Colors.RESET}      - Remove an item from your inventory                 │
+│                                                                          │
+│  {Colors.BOLD}Security Functions:{Colors.RESET}                                                     │
+│    {Colors.GREEN}scan, s{Colors.RESET}          - Search for viruses in current location             │
+│    {Colors.GREEN}scan [item]{Colors.RESET}      - Check if a specific item contains a virus          │
+│    {Colors.GREEN}advscan{Colors.RESET}          - Perform advanced scan (requires decoder_tool)      │
+│    {Colors.GREEN}advscan [item]{Colors.RESET}   - Perform advanced scan on specific item             │
+│    {Colors.GREEN}analyze [item]{Colors.RESET}   - Deeply analyze an item for hidden properties       │
+│    {Colors.GREEN}quarantine [virus]{Colors.RESET} - Contain a discovered virus                       │
+│                                                                          │
+│  {Colors.BOLD}Information:{Colors.RESET}                                                            │
+│    {Colors.GREEN}status{Colors.RESET}           - Check your virus discovery progress                │
+│    {Colors.GREEN}knowledge{Colors.RESET}        - View your computer architecture knowledge          │
+│    {Colors.GREEN}about [topic]{Colors.RESET}    - Get information about a computer component         │
+│                                                                          │
+│  {Colors.BOLD}Progress Tracking:{Colors.RESET}                                                      │
+│    {Colors.GREEN}achievements{Colors.RESET}     - View your achievements and progress report         │
+│    {Colors.GREEN}stats{Colors.RESET}            - Alternative command for achievements               │
+│                                                                          │
+│  {Colors.BOLD}Educational Features:{Colors.RESET}                                                   │
+│    {Colors.GREEN}visualize [comp]{Colors.RESET} - Show visualization of a component                  │
+│    {Colors.GREEN}viz [comp]{Colors.RESET}       - Shorthand for visualize                            │
+│    {Colors.GREEN}simulate cpu{Colors.RESET}     - Start CPU pipeline simulation minigame             │
+│    {Colors.GREEN}simulate memory{Colors.RESET}  - Start memory hierarchy simulation                  │
+│    {Colors.GREEN}simulate step{Colors.RESET}    - Advance simulation by one step                     │
+│    {Colors.GREEN}simulate toggle{Colors.RESET}  - Toggle between simulation modes                    │
+│    {Colors.GREEN}simulate reset{Colors.RESET}   - Reset the simulation                               │
+│                                                                          │
+│  {Colors.BOLD}Save/Load:{Colors.RESET}                                                              │
+│    {Colors.GREEN}save [name]{Colors.RESET}      - Save your game progress (optional name)            │
+│    {Colors.GREEN}load [name]{Colors.RESET}      - Load a saved game                                  │
+│    {Colors.GREEN}saves{Colors.RESET}            - List all available save files                      │
+│    {Colors.GREEN}deletesave [name]{Colors.RESET} - Delete a saved game                               │
+│                                                                          │
+│  {Colors.BOLD}System:{Colors.RESET}                                                                 │
+│    {Colors.GREEN}help, h{Colors.RESET}          - Show this help message                             │
+│    {Colors.GREEN}?{Colors.RESET}                - Show quick help overlay                            │
+│    {Colors.GREEN}clear, cls, c{Colors.RESET}    - Clear the screen and refresh display               │
+│    {Colors.GREEN}quit, q, exit{Colors.RESET}    - Exit the game                                      │
+│                                                                          │
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-Shortcuts: [N]orth [S]outh [E]ast [W]est [NE] [SE] [SW] [NW] [U]p [D]own
-Commands: [L]ook [I]nventory [T]ake [H]elp [M]ap [Q]uit
+{Colors.BOLD}Main Shortcuts:{Colors.RESET}
+  Movement: {Colors.GREEN}[N]{Colors.RESET}orth {Colors.GREEN}[S]{Colors.RESET}outh {Colors.GREEN}[E]{Colors.RESET}ast {Colors.GREEN}[W]{Colors.RESET}est {Colors.GREEN}[NE]{Colors.RESET} {Colors.GREEN}[SE]{Colors.RESET} {Colors.GREEN}[SW]{Colors.RESET} {Colors.GREEN}[NW]{Colors.RESET} {Colors.CYAN}[U]{Colors.RESET}p {Colors.CYAN}[D]{Colors.RESET}own
+  Commands: {Colors.GREEN}[L]{Colors.RESET}ook {Colors.GREEN}[I]{Colors.RESET}nventory {Colors.GREEN}[T]{Colors.RESET}ake {Colors.GREEN}[H]{Colors.RESET}elp {Colors.GREEN}[M]{Colors.RESET}ap {Colors.GREEN}[C]{Colors.RESET}lear {Colors.GREEN}[Q]{Colors.RESET}uit {Colors.GREEN}[S]{Colors.RESET}can
+  
+Use '{Colors.GREEN}?{Colors.RESET}' for a quick command reference at any time.
 """
         return help_text
         
