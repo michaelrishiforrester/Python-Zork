@@ -333,27 +333,50 @@ class QuickHelpCommand(Command):
     def execute(self):
         from computerquest.utils.helpers import Colors
         
-        quick_help = f"""┏━━━━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}{Colors.BOLD}QUICK HELP{Colors.RESET} ━━━━━━━━━━━━━━━━━━━━━┓
-│                                                          │
-│  {Colors.BOLD}Movement:{Colors.RESET}                                               │
-│    {Colors.GREEN}n, s, e, w{Colors.RESET} - Go North, South, East, West             │
-│    {Colors.GREEN}ne, nw, se, sw{Colors.RESET} - Go Northeast, Northwest, etc.       │
-│    {Colors.CYAN}u, d{Colors.RESET} - Go Up, Down                                   │
-│                                                          │
-│  {Colors.BOLD}Basic Commands:{Colors.RESET}                                         │
-│    {Colors.GREEN}l, look{Colors.RESET} - Examine your surroundings or an item        │
-│    {Colors.GREEN}i{Colors.RESET} - Check your inventory                              │
-│    {Colors.GREEN}t [item]{Colors.RESET} - Take an item                               │
-│    {Colors.GREEN}m{Colors.RESET} - Show map                                          │
-│    {Colors.GREEN}c{Colors.RESET} - Clear screen                                      │
-│    {Colors.GREEN}h{Colors.RESET} or {Colors.GREEN}help{Colors.RESET} - Detailed help                             │
-│    {Colors.GREEN}q{Colors.RESET} - Quit game                                         │
-│                                                          │
-│  {Colors.BOLD}Security:{Colors.RESET}                                               │
-│    {Colors.GREEN}s, scan{Colors.RESET} - Scan for viruses                            │
-│    {Colors.GREEN}quarantine [virus]{Colors.RESET} - Contain a discovered virus       │
-│                                                          │
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"""
+        quick_help = f"""┏━━━━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}{Colors.BOLD}COMMAND REFERENCE{Colors.RESET} ━━━━━━━━━━━━━━━━━━━━━┓
+│                                                                      │
+│  {Colors.BOLD}Movement:{Colors.RESET}                                                           │
+│    {Colors.GREEN}n, s, e, w{Colors.RESET} - Go North, South, East, West                         │
+│    {Colors.GREEN}ne, nw, se, sw{Colors.RESET} - Go Northeast, Northwest, Southeast, Southwest   │
+│    {Colors.CYAN}u, d{Colors.RESET} - Go Up, Down                                               │
+│                                                                      │
+│  {Colors.BOLD}Basic Commands:{Colors.RESET}                                                     │
+│    {Colors.GREEN}l, look{Colors.RESET} - Examine your surroundings or an item                    │
+│    {Colors.GREEN}look [item]{Colors.RESET} - Examine a specific item                             │
+│    {Colors.GREEN}i{Colors.RESET} - Check your inventory                                          │
+│    {Colors.GREEN}t [item]{Colors.RESET} - Take an item                                           │
+│    {Colors.GREEN}drop [item]{Colors.RESET} - Remove an item from your inventory                  │
+│    {Colors.GREEN}m{Colors.RESET} - Show map                                                      │
+│    {Colors.GREEN}mb{Colors.RESET} - Show motherboard layout                                      │
+│    {Colors.GREEN}c{Colors.RESET} - Clear screen                                                  │
+│                                                                      │
+│  {Colors.BOLD}Security Functions:{Colors.RESET}                                                 │
+│    {Colors.GREEN}s, scan{Colors.RESET} - Scan for viruses in current location                    │
+│    {Colors.GREEN}scan [item]{Colors.RESET} - Check if an item contains a virus                   │
+│    {Colors.GREEN}quarantine [virus]{Colors.RESET} - Contain a discovered virus                   │
+│    {Colors.GREEN}advscan{Colors.RESET} - Perform advanced scan (requires decoder_tool)           │
+│                                                                      │
+│  {Colors.BOLD}Information & Progress:{Colors.RESET}                                             │
+│    {Colors.GREEN}status{Colors.RESET} - Check your virus discovery progress                      │
+│    {Colors.GREEN}knowledge{Colors.RESET} - View your computer architecture knowledge             │
+│    {Colors.GREEN}about [topic]{Colors.RESET} - Get information about a computer component        │
+│    {Colors.GREEN}achievements{Colors.RESET} - View your achievements and progress                │
+│                                                                      │
+│  {Colors.BOLD}Educational Features:{Colors.RESET}                                               │
+│    {Colors.GREEN}viz [comp]{Colors.RESET} - Show visualization of a component                    │
+│    {Colors.GREEN}simulate cpu{Colors.RESET} - Start CPU pipeline simulation                      │
+│    {Colors.GREEN}simulate memory{Colors.RESET} - Start memory hierarchy simulation               │
+│                                                                      │
+│  {Colors.BOLD}System Commands:{Colors.RESET}                                                    │
+│    {Colors.GREEN}help, h{Colors.RESET} - Show full help message                                  │
+│    {Colors.GREEN}save [name]{Colors.RESET} - Save your game progress                             │
+│    {Colors.GREEN}load [name]{Colors.RESET} - Load a saved game                                   │
+│    {Colors.GREEN}saves{Colors.RESET} - List available save files                                 │
+│    {Colors.GREEN}q{Colors.RESET} - Quit game                                                     │
+│                                                                      │
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+{Colors.BOLD}TIP:{Colors.RESET} Use {Colors.BOLD}Tab{Colors.RESET} key for command completion and {Colors.BOLD}Up/Down arrows{Colors.RESET} for command history!"""
         return quick_help
 
 class CommandProcessor:

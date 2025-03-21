@@ -283,11 +283,13 @@ class Game:
         """Display welcome message and game introduction"""
         from computerquest.utils.helpers import Colors
         
+        # Title banner
         print("━" * 78)
         print(f"{Colors.CYAN}   █▄▀ █▀█ █▀▄ █▀▀ █▄▀ █   █▀█ █░█ █▀▄   █▀▀ █▀█ █▀▄▀█ █▀█ █░█ ▀█▀ █▀▀ █▀█   █▀█ █░█ █▀▀ █▀ ▀█▀{Colors.RESET}")
         print(f"{Colors.CYAN}   █░█ █▄█ █▄▀ ██▄ █░█ █▄▄ █▄█ █▄█ █▄▀   █▄▄ █▄█ █░▀░█ █▀▀ █▄█ ░█░ ██▄ █▀▄   ▀▀█ █▄█ ██▄ ▄█ ░█░{Colors.RESET}")
         print("━" * 78)
         
+        # Consolidated mission briefing
         print(f"\n┏━━━━━━━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}{Colors.BOLD}MISSION BRIEFING{Colors.RESET} ━━━━━━━━━━━━━━━━━━━━━━━━┓")
         print("│                                                                    │")
         print(f"│  Welcome to the {Colors.CYAN}KodeKloud Computer Architecture Quest!{Colors.RESET}             │")
@@ -300,37 +302,25 @@ class Game:
         print("│  and beyond, you'll discover how each component works and how      │")
         print("│  they interconnect.                                                │")
         print("│                                                                    │")
-        print(f"│  Use the '{Colors.GREEN}help{Colors.RESET}' command to see available actions.                  │")
-        print("│                                                                    │")
         print(f"│  Good luck, Security Program! The system's integrity depends on you│")
         print("│                                                                    │")
         print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
         
-        # Command shortcuts with improved formatting
-        print(f"\n┏━━━━━━━━━━━━━━━━━━━━━━━━ {Colors.YELLOW}COMMAND SHORTCUTS{Colors.RESET} ━━━━━━━━━━━━━━━━━━━━━━━━┓")
-        print("│                                                                    │")
-        print(f"│  Movement: {Colors.GREEN}[N]{Colors.RESET}orth {Colors.GREEN}[S]{Colors.RESET}outh {Colors.GREEN}[E]{Colors.RESET}ast {Colors.GREEN}[W]{Colors.RESET}est {Colors.GREEN}[NE]{Colors.RESET} {Colors.GREEN}[SE]{Colors.RESET} {Colors.GREEN}[SW]{Colors.RESET} {Colors.GREEN}[NW]{Colors.RESET}      │")
-        print(f"│           {Colors.CYAN}[U]{Colors.RESET}p {Colors.CYAN}[D]{Colors.RESET}own                                              │")
-        print("│                                                                    │")
-        print(f"│  Actions: {Colors.GREEN}[L]{Colors.RESET}ook {Colors.GREEN}[I]{Colors.RESET}nventory {Colors.GREEN}[T]{Colors.RESET}ake {Colors.GREEN}[H]{Colors.RESET}elp {Colors.GREEN}[M]{Colors.RESET}ap {Colors.GREEN}[C]{Colors.RESET}lear {Colors.GREEN}[Q]{Colors.RESET}uit   │")
-        print(f"│           {Colors.GREEN}[S]{Colors.RESET}can {Colors.GREEN}[Q]{Colors.RESET}uarantine                                      │")
-        print("│                                                                    │")
-        print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+        # Enhanced status bar with key game information
+        total_viruses = 5  # Total number of viruses from config
+        health_level = 10  # Placeholder for health level (max 10)
+        health_bar = f"{Colors.GREEN}{'█' * health_level}{Colors.RESET}"
         
-        # Status line with enhanced visual style
         print("\n" + "━" * 78)
-        print(f"  Status: Health: {Colors.GREEN}██████████{Colors.RESET} | Items: 0/8 | Viruses: {Colors.GREEN}0/5 Found, 0/5 Quarantined{Colors.RESET}")
+        print(f"  {Colors.BOLD}STATUS:{Colors.RESET} Health: {health_bar} | Items: 0/8 | Viruses: {Colors.GREEN}0/{total_viruses} Found, 0/{total_viruses} Quarantined{Colors.RESET}")
         print("━" * 78)
         
-        # Help overlay hint
-        print(f"\n  Type a command or '{Colors.GREEN}?{Colors.RESET}' for quick help.")
+        # Help command reference - streamlined
+        print(f"\n  {Colors.BOLD}CONTROLS:{Colors.RESET} Type '{Colors.GREEN}?{Colors.RESET}' for command help | '{Colors.GREEN}n/s/e/w{Colors.RESET}' to move | '{Colors.GREEN}l{Colors.RESET}' to look | '{Colors.GREEN}i{Colors.RESET}' for inventory")
         
-        # Show initial location using new format
+        # Show initial location using new format - KEEPING THIS AS THE MAIN FOCUS
         from computerquest.utils.helpers import format_look_output
         print(f"\n{format_look_output(self.player.location, self.player.location.doors, list(self.player.location.items.keys()))}")
-        
-        # Navigation hint
-        print(f"\nType '{Colors.GREEN}help{Colors.RESET}' for a list of commands or use shortcuts like '{Colors.GREEN}n{Colors.RESET}' for north, '{Colors.GREEN}l{Colors.RESET}' for look.")
 
     def move(self, direction):
         """

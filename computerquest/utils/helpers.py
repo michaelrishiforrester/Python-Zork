@@ -289,7 +289,7 @@ def format_look_output(location, connections, items, technical_details=None):
             output.append(f"  {line}")
         output.append("┗" + "━" * 51 + "┛")
     
-    # Status line with color-coded health bar
+    # Enhanced status bar with more game information
     total_viruses = 5  # Total number of viruses from config
     health_level = 10  # Placeholder for health level (max 10)
     health_bar = f"{Colors.GREEN}{'█' * health_level}{Colors.RESET}"
@@ -299,12 +299,17 @@ def format_look_output(location, connections, items, technical_details=None):
     
     virus_color = Colors.RED if found_viruses > quar_viruses else Colors.GREEN
     
+    # Create a compact status bar with more game state information
     output.append("\n" + "━" * 70)
-    output.append(f"  Status: Health: {health_bar} | Items: {len(items)}/8 | Viruses: {virus_color}{found_viruses}/{total_viruses} Found, {quar_viruses}/{total_viruses} Quarantined{Colors.RESET}")
-    output.append("━" * 70)
+    output.append(f"  {Colors.BOLD}STATUS:{Colors.RESET} Health: {health_bar} | Items: {len(items)}/8 | Viruses: {virus_color}{found_viruses}/{total_viruses} Found, {quar_viruses}/{total_viruses} Quarantined{Colors.RESET}")
     
-    # Command shortcuts with color highlighting
-    output.append(f"\nShortcuts: {Colors.GREEN}[N]{Colors.RESET}orth {Colors.GREEN}[S]{Colors.RESET}outh {Colors.GREEN}[E]{Colors.RESET}ast {Colors.GREEN}[W]{Colors.RESET}est {Colors.GREEN}[NE]{Colors.RESET} {Colors.GREEN}[SE]{Colors.RESET} {Colors.GREEN}[SW]{Colors.RESET} {Colors.GREEN}[NW]{Colors.RESET} {Colors.GREEN}[U]{Colors.RESET}p {Colors.GREEN}[D]{Colors.RESET}own")
-    output.append(f"Commands: {Colors.GREEN}[L]{Colors.RESET}ook {Colors.GREEN}[I]{Colors.RESET}nventory {Colors.GREEN}[T]{Colors.RESET}ake {Colors.GREEN}[H]{Colors.RESET}elp {Colors.GREEN}[M]{Colors.RESET}ap {Colors.GREEN}[C]{Colors.RESET}lear {Colors.GREEN}[Q]{Colors.RESET}uit")
+    # Add system location info to status bar 
+    if hasattr(location, 'category'):
+        category = location.category.capitalize() if hasattr(location, 'category') else "System"
+        output.append(f"  {Colors.BOLD}SYSTEM:{Colors.RESET} {category} Component | Type '{Colors.GREEN}?{Colors.RESET}' for command help | '{Colors.GREEN}m{Colors.RESET}' for map")
+    else:
+        output.append(f"  {Colors.BOLD}SYSTEM:{Colors.RESET} Computer Component | Type '{Colors.GREEN}?{Colors.RESET}' for command help | '{Colors.GREEN}m{Colors.RESET}' for map")
+    
+    output.append("━" * 70)
     
     return "\n".join(output)
