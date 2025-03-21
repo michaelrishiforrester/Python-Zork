@@ -175,7 +175,9 @@ class QuitCommand(Command):
         confirm = input("Are you sure you want to exit? Progress will be lost. (y/n): ").lower()
         if confirm in ['y', 'yes']:
             self.game.game_over = True
-            return "Exiting KodeKloud Computer Quest. Goodbye!"
+            # Return an empty string to avoid duplicate goodbye messages
+            # The game loop will handle the exit message
+            return ""
         else:
             return "Continuing mission..."
 
