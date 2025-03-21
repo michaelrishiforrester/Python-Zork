@@ -14,6 +14,41 @@ KodeKloud Computer Quest is an interactive text adventure where players navigate
 - Progressive knowledge system that tracks player learning
 - Mini-games that demonstrate CPU pipelines and memory hierarchies
 - Save/load system to preserve progress
+- Enhanced UI with improved visuals and readability
+
+## UI Improvements
+
+The interface has been updated with several visual improvements:
+
+1. **Enhanced Box Formatting**
+   - Unicode box drawing characters for better-looking UI
+   - Consistent styling for all game sections
+   - Improved readability with clear section dividers
+
+2. **Directional Information**
+   - ASCII Directional Compass showing available paths
+   - Improved formatting for direction names
+   - Clearer connections between components
+
+3. **Clearer Structure & Organization**
+   - Better section separation with themed headers
+   - Aligned component lists with bullet points
+   - Improved status display
+
+4. **Progress Visualization**
+   - Progress bars for virus discovery and quarantine
+   - Knowledge level indicators with visual meters
+   - Overall progress tracking
+
+5. **Command Shortcuts Reference**
+   - Quick reference for command shortcuts
+   - Movement shortcuts clearly displayed
+   - One-letter shortcuts for common actions
+
+6. **Status Line**
+   - Current health and inventory capacity
+   - Virus discovery and quarantine progress
+   - Available command shortcuts
 
 ## Installation
 

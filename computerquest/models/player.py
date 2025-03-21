@@ -73,12 +73,12 @@ class Player:
             # First check in the room
             if item in room.items:
                 item_desc = room.items[item]
-                return f"=== {item} ===\n\n{item_desc}\n\nType 'take {item}' to pick it up, or 'read {item}' if it's readable."
+                return f"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━ {item} ━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n{item_desc}\n\nType 'take {item}' to pick it up, or 'read {item}' if it's readable.\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
                 
             # Then check inventory
             elif item in self.items:
                 item_desc = self.items[item]
-                return f"=== {item} (in your inventory) ===\n\n{item_desc}\n\nType 'drop {item}' to remove it from your inventory."
+                return f"┏━━━━━━━━━━━━━━━━━━━ {item} (in your inventory) ━━━━━━━━━━━━━━━━━━━┓\n\n{item_desc}\n\nType 'drop {item}' to remove it from your inventory.\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
                 
             # Not found
             else:
@@ -86,7 +86,28 @@ class Player:
                 
         # Looking around the room
         else:
-            return room.print_details()
+            # Generate technical details if the component has been visited
+            technical_details = None
+            if room.visited:
+                technical_details = []
+                if room.security_level > 0:
+                    technical_details.append(f"Security Level: {room.security_level}")
+                if room.data_types:
+                    technical_details.append(f"Data Types: {', '.join(room.data_types)}")
+                if any(room.performance.values()):
+                    technical_details.append("Performance Metrics:")
+                    for metric, value in room.performance.items():
+                        if value > 0:
+                            technical_details.append(f"  * {metric.capitalize()}: {value}/10")
+            
+            # Use the new formatted output
+            from computerquest.utils.helpers import format_look_output
+            return format_look_output(
+                location=room,
+                connections=room.doors,
+                items=list(room.items.keys()),
+                technical_details=technical_details
+            )
 
     def take(self, item):
         """
@@ -468,16 +489,33 @@ class Player:
     
     def check_progress(self):
         """Check progress on virus discovery and quarantine"""
-        result = "Mission Status Report:\n"
-        result += "--------------------\n"
+        from computerquest.config import VIRUS_TYPES
         
-        result += f"Viruses Found: {len(self.found_viruses)}\n"
+        # Calculate progress bar for viruses found
+        found_bar = "█" * len(self.found_viruses) + "░" * (len(VIRUS_TYPES) - len(self.found_viruses))
+        quarantined_bar = "█" * len(self.quarantined_viruses) + "░" * (len(VIRUS_TYPES) - len(self.quarantined_viruses))
+        
+        result = "┏━━━━━━━━━━━━━━━ MISSION STATUS REPORT ━━━━━━━━━━━━━━━┓\n"
+        result += f"  Viruses Found: {found_bar} {len(self.found_viruses)}/{len(VIRUS_TYPES)}\n"
+        
         if self.found_viruses:
-            result += "- " + "\n- ".join(self.found_viruses) + "\n"
+            result += "  Detected Viruses:\n"
+            for virus in self.found_viruses:
+                result += f"    • {virus}\n"
             
-        result += f"\nViruses Quarantined: {len(self.quarantined_viruses)}\n"
+        result += f"\n  Viruses Quarantined: {quarantined_bar} {len(self.quarantined_viruses)}/{len(VIRUS_TYPES)}\n"
         if self.quarantined_viruses:
-            result += "- " + "\n- ".join(self.quarantined_viruses) + "\n"
+            result += "  Neutralized Viruses:\n"
+            for virus in self.quarantined_viruses:
+                result += f"    • {virus}\n"
+                
+        # Breadcrumb path - Show current location context
+        from computerquest.utils.helpers import truncate_desc
+        if hasattr(self.location, 'name'):
+            result += "\n  Current Location Path:\n"
+            result += f"    {self.location.name} ({truncate_desc(self.location.desc, 40)})\n"
+            
+        result += "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
             
         return result
         
@@ -485,14 +523,21 @@ class Player:
         """Display knowledge gained about computer architecture"""
         total = sum(self.knowledge.values())
         
-        result = "Computer Architecture Knowledge:\n"
-        result += "------------------------------\n"
+        result = "┏━━━━━━━━━━━━ COMPUTER ARCHITECTURE KNOWLEDGE ━━━━━━━━━━━━┓\n"
         
         for topic, level in self.knowledge.items():
             stars = "★" * level + "☆" * (MAX_KNOWLEDGE - level)
-            result += f"{topic.capitalize()}: {stars} ({level}/{MAX_KNOWLEDGE})\n"
+            level_bar = "█" * level + "░" * (MAX_KNOWLEDGE - level)
+            result += f"  {topic.capitalize()}: {stars} {level_bar} {level}/{MAX_KNOWLEDGE}\n"
             
-        result += f"\nTotal Knowledge: {total}/{len(self.knowledge) * MAX_KNOWLEDGE}"
+        # Total progress bar
+        max_total = len(self.knowledge) * MAX_KNOWLEDGE
+        progress_percent = (total / max_total) * 100
+        progress_bar = "█" * int(progress_percent/10) + "░" * (10 - int(progress_percent/10))
+        
+        result += f"\n  Overall Progress: {progress_bar} {progress_percent:.1f}%"
+        result += f"\n  Total Knowledge: {total}/{max_total}"
+        result += "\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
         
         return result
     

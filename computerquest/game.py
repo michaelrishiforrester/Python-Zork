@@ -187,22 +187,35 @@ class Game:
 
     def display_welcome(self):
         """Display welcome message and game introduction"""
-        print("=" * 70)
+        print("━" * 70)
         print("   █▄▀ █▀█ █▀▄ █▀▀ █▄▀ █   █▀█ █░█ █▀▄   █▀▀ █▀█ █▀▄▀█ █▀█ █░█ ▀█▀ █▀▀ █▀█   █▀█ █░█ █▀▀ █▀ ▀█▀")
         print("   █░█ █▄█ █▄▀ ██▄ █░█ █▄▄ █▄█ █▄█ █▄▀   █▄▄ █▄█ █░▀░█ █▀▀ █▄█ ░█░ ██▄ █▀▄   ▀▀█ █▄█ ██▄ ▄█ ░█░")
-        print("=" * 70)
-        print("\nWelcome to the KodeKloud Computer Architecture Quest!")
-        print("\nYou are a security program deployed into a computer system infected with")
-        print("multiple viruses. Your mission is to locate and quarantine all viruses")
-        print("while learning about computer architecture.")
-        print("\nAs you travel through the system, from CPU to memory to storage and beyond,")
-        print("you'll discover how each component works and how they interconnect.")
-        print("\nUse the 'help' command to see available actions.")
-        print("\nGood luck, Security Program! The system's integrity depends on you.")
-        print("\n" + "=" * 70)
+        print("━" * 70)
+        print("\n┏━━━━━━━━━━━━━━━━━━━━━━ MISSION BRIEFING ━━━━━━━━━━━━━━━━━━━━━━┓")
+        print("  Welcome to the KodeKloud Computer Architecture Quest!")
+        print("\n  You are a security program deployed into a computer system infected with")
+        print("  multiple viruses. Your mission is to locate and quarantine all viruses")
+        print("  while learning about computer architecture.")
+        print("\n  As you travel through the system, from CPU to memory to storage and beyond,")
+        print("  you'll discover how each component works and how they interconnect.")
+        print("\n  Use the 'help' command to see available actions.")
+        print("\n  Good luck, Security Program! The system's integrity depends on you.")
+        print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
         
-        # Show initial location description
-        print(f"\n{self.player.location.name}:\n{self.player.location.desc}")
+        # Command shortcuts
+        print("\n┏━━━━━━━━━━━━━━━━━━━━━━ COMMAND SHORTCUTS ━━━━━━━━━━━━━━━━━━━━━━┓")
+        print("  Movement: [N]orth [S]outh [E]ast [W]est [NE] [SE] [SW] [NW] [U]p [D]own")
+        print("  Commands: [L]ook [I]nventory [T]ake [H]elp [M]ap [Q]uit")
+        print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+        
+        # Status line
+        print("\n" + "━" * 70)
+        print(f"  Status: Health: ██████████ | Items: 0/8 | Viruses: 0/5 Found, 0/5 Quarantined")
+        print("━" * 70)
+        
+        # Show initial location using new format
+        from computerquest.utils.helpers import format_look_output
+        print(f"\n{format_look_output(self.player.location, self.player.location.doors, list(self.player.location.items.keys()))}")
         print("\nType 'help' for a list of commands.")
 
     def move(self, direction):
@@ -238,8 +251,34 @@ class Game:
             
             # Add system architecture educational note on first visit
             if prev_location.name != curr_location.name:
-                result = f"Moved from {prev_location.name} to {curr_location.name}.\n\n"
-                result += f"{curr_location.name}:\n{curr_location.desc}"
+                # Create movement header with fancy styling
+                result = f"┏━━━━━━━━━━━━━━━━━━━━ MOVEMENT ━━━━━━━━━━━━━━━━━━━━┓\n"
+                result += f"  Moved from {prev_location.name} to {curr_location.name}.\n"
+                result += f"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
+                
+                # Use the new formatted look output for the current location
+                from computerquest.utils.helpers import format_look_output
+                
+                # Generate technical details if the component has been visited
+                technical_details = None
+                if curr_location.visited:
+                    technical_details = []
+                    if curr_location.security_level > 0:
+                        technical_details.append(f"Security Level: {curr_location.security_level}")
+                    if curr_location.data_types:
+                        technical_details.append(f"Data Types: {', '.join(curr_location.data_types)}")
+                    if any(curr_location.performance.values()):
+                        technical_details.append("Performance Metrics:")
+                        for metric, value in curr_location.performance.items():
+                            if value > 0:
+                                technical_details.append(f"  * {metric.capitalize()}: {value}/10")
+                
+                result += format_look_output(
+                    location=curr_location,
+                    connections=curr_location.doors,
+                    items=list(curr_location.items.keys()),
+                    technical_details=technical_details
+                )
                 
                 # Handle any NPCs or hostile entities
                 if curr_location.play:
@@ -252,7 +291,7 @@ class Game:
                 return f"You remain at {curr_location.name}."
         else:
             # Failed to move
-            return f"There is no connection to the {direction} from {self.player.location.name}."
+            return f"┏━━━━━━━━━━━━━━━━━━━━ ERROR ━━━━━━━━━━━━━━━━━━━━┓\n  There is no connection to the {direction} from {self.player.location.name}.\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
             
     def display_map(self):
         """
@@ -273,60 +312,64 @@ class Game:
             
     def show_help(self):
         """Show available commands"""
-        help_text = """
-KODEKLOUD COMPUTER QUEST COMMANDS:
+        help_text = """┏━━━━━━━━━━━━━━━━━━ KODEKLOUD COMPUTER QUEST COMMANDS ━━━━━━━━━━━━━━━━━━┓
 
-Movement:
-  go [direction]   - Move between components (n, s, e, w, ne, sw, etc.)
-  [direction]      - You can also just type the direction (north, s, east, w)
+  Movement:
+    go [direction]   - Move between components (n, s, e, w, ne, sw, etc.)
+    [direction]      - You can also just type the direction (north, s, east, w)
 
-Exploration:
-  look             - Examine your current location
-  look [item]      - Examine a specific item
-  read [item]      - Read text content of an item
-  map, m           - Display a map of visited computer components
-  motherboard      - Show the motherboard layout of the computer system
+  Exploration:
+    look, l          - Examine your current location
+    look [item]      - Examine a specific item
+    read [item]      - Read text content of an item
+    map, m           - Display a map of visited computer components
+    motherboard, mb  - Show the motherboard layout of the computer system
 
-Inventory:
-  inventory        - List items in your storage
-  take [item]      - Add an item to your inventory
-  drop [item]      - Remove an item from your inventory
+  Inventory:
+    inventory, i     - List items in your storage
+    take [item], t   - Add an item to your inventory
+    drop [item]      - Remove an item from your inventory
 
-Security Functions:
-  scan             - Search for viruses in current location
-  scan [item]      - Check if a specific item contains a virus
-  advscan          - Perform advanced scan (requires decoder_tool)
-  advscan [item]   - Perform advanced scan on specific item
-  analyze [item]   - Deeply analyze an item for hidden properties
-  quarantine [virus] - Contain a discovered virus
+  Security Functions:
+    scan             - Search for viruses in current location
+    scan [item]      - Check if a specific item contains a virus
+    advscan          - Perform advanced scan (requires decoder_tool)
+    advscan [item]   - Perform advanced scan on specific item
+    analyze [item]   - Deeply analyze an item for hidden properties
+    quarantine [virus] - Contain a discovered virus
 
-Information:
-  status           - Check your virus discovery progress
-  knowledge        - View your computer architecture knowledge
-  about [topic]    - Get information about a computer component
+  Information:
+    status           - Check your virus discovery progress
+    knowledge        - View your computer architecture knowledge
+    about [topic]    - Get information about a computer component
   
-Progress Tracking:
-  achievements     - View your achievements and progress report
-  stats            - Alternative command for achievements
+  Progress Tracking:
+    achievements     - View your achievements and progress report
+    stats            - Alternative command for achievements
   
-Educational Features:
-  visualize [comp] - Show visualization of a component (cpu, memory, network, storage)
-  viz [comp]       - Shorthand for visualize
-  simulate cpu     - Start CPU pipeline simulation minigame
-  simulate memory  - Start memory hierarchy simulation
-  simulate step    - Advance simulation by one step
-  simulate toggle  - Toggle between simulation modes
-  simulate reset   - Reset the simulation
+  Educational Features:
+    visualize [comp] - Show visualization of a component (cpu, memory, network, storage)
+    viz [comp]       - Shorthand for visualize
+    simulate cpu     - Start CPU pipeline simulation minigame
+    simulate memory  - Start memory hierarchy simulation
+    simulate step    - Advance simulation by one step
+    simulate toggle  - Toggle between simulation modes
+    simulate reset   - Reset the simulation
   
-Save/Load:
-  save [name]      - Save your game progress (optional name)
-  load [name]      - Load a saved game
-  saves            - List all available save files
-  deletesave [name] - Delete a saved game
+  Save/Load:
+    save [name]      - Save your game progress (optional name)
+    load [name]      - Load a saved game
+    saves            - List all available save files
+    deletesave [name] - Delete a saved game
   
-System:
-  help             - Show this help message
-  quit             - Exit the game
+  System:
+    help, h, ?       - Show this help message
+    quit, q, exit    - Exit the game
+
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Shortcuts: [N]orth [S]outh [E]ast [W]est [NE] [SE] [SW] [NW] [U]p [D]own
+Commands: [L]ook [I]nventory [T]ake [H]elp [M]ap [Q]uit
 """
         return help_text
         

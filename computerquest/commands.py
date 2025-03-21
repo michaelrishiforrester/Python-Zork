@@ -89,15 +89,16 @@ class InventoryCommand(Command):
     """Command to show player's inventory"""
     def execute(self):
         if not self.game.player.items:
-            return "Your system storage is empty."
+            return "┏━━━━━━━━━━━━━━━ SYSTEM STORAGE ━━━━━━━━━━━━━━━┓\n  Your system storage is empty.\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
         
-        result = "System Storage Contains:\n"
+        result = "┏━━━━━━━━━━━━━━━ SYSTEM STORAGE ━━━━━━━━━━━━━━━┓\n"
         for item, desc in self.game.player.items.items():
             # Show abbreviated description for inventory listing
             short_desc = desc.split('.')[0] if '.' in desc else desc
             if len(short_desc) > 50:
                 short_desc = short_desc[:47] + "..."
-            result += f"- {item}: {short_desc}\n"
+            result += f"  • {item}: {short_desc}\n"
+        result += "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
         return result
 
 class ScanCommand(Command):
