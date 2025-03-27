@@ -17,7 +17,8 @@ class Player:
         """
         self.location = location  # Current component location
         self.items = items or {}  # Player inventory
-        self.health = 100  # Health value
+        self.max_health = 20  # Maximum health points
+        self.health = 20  # Current health points
         self.com = NPC  # Is this an NPC?
         self.name = name  # Player name
         self.death = False  # Is player dead?

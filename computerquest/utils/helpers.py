@@ -289,10 +289,27 @@ def format_look_output(location, connections, items, technical_details=None):
             output.append(f"  {line}")
         output.append("┗" + "━" * 51 + "┛")
     
-    # Enhanced status bar with more game information
+    # Enhanced status bar with more game information from player
     total_viruses = 5  # Total number of viruses from config
-    health_level = 10  # Placeholder for health level (max 10)
-    health_bar = f"{Colors.GREEN}{'█' * health_level}{Colors.RESET}"
+    
+    # Get health from player if available
+    if hasattr(location, 'game') and hasattr(location.game, 'player'):
+        player = location.game.player
+        max_health = player.max_health
+        current_health = player.health
+    else:
+        # Use defaults if player not available
+        max_health = 20
+        current_health = 20
+    
+    # Set color based on health percentage
+    health_percent = current_health / max_health
+    if health_percent > 0.7:
+        health_color = Colors.GREEN
+    elif health_percent > 0.3:
+        health_color = Colors.YELLOW
+    else:
+        health_color = Colors.RED
     
     found_viruses = len(location.items.get('found_viruses', []))
     quar_viruses = len(location.items.get('quarantined_viruses', []))
@@ -301,7 +318,7 @@ def format_look_output(location, connections, items, technical_details=None):
     
     # Create a compact status bar with more game state information
     output.append("\n" + "━" * 70)
-    output.append(f"  {Colors.BOLD}STATUS:{Colors.RESET} Health: {health_bar} | Items: {len(items)}/8 | Viruses: {virus_color}{found_viruses}/{total_viruses} Found, {quar_viruses}/{total_viruses} Quarantined{Colors.RESET}")
+    output.append(f"  {Colors.BOLD}STATUS:{Colors.RESET} Health: {health_color}{current_health}/{max_health}{Colors.RESET} | Items: {len(items)}/8 | Viruses: {virus_color}{found_viruses}/{total_viruses} Found, {quar_viruses}/{total_viruses} Quarantined{Colors.RESET}")
     
     # Add system location info to status bar 
     if hasattr(location, 'category'):
