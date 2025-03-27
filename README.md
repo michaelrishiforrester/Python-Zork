@@ -2,6 +2,10 @@
 
 An educational text-based adventure game that teaches computer architecture concepts.
 
+![KodeKloud Computer Quest](https://img.shields.io/badge/KodeKloud-Computer%20Quest-blue)
+![Python Version](https://img.shields.io/badge/python-3.8%2B-green)
+![License](https://img.shields.io/badge/license-MIT-yellow)
+
 ## Overview
 
 KodeKloud Computer Quest is an interactive text adventure where players navigate through a computer system, learning about various hardware components while searching for and neutralizing viruses. The game simulates the internals of a modern computer, from the CPU cores to memory, storage, and peripherals.
@@ -50,7 +54,7 @@ The interface has been updated with several visual improvements:
    - Virus discovery and quarantine progress
    - Available command shortcuts
 
-## Installation
+## Quick Start
 
 ```bash
 # Clone the repository
@@ -61,74 +65,153 @@ cd kodekloud-computer-quest
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
+# Install the game
+pip install -e .
+
 # Run the game
 python main.py
 ```
 
-## Commands
+## Detailed Installation
+
+### Prerequisites
+
+- Python 3.8 or higher
+- pip (Python package installer)
+
+### Installation Options
+
+#### Basic Installation
+
+For end-users who just want to play the game:
+
+```bash
+# Install from the cloned repository
+pip install -e .
+
+# Run the game
+python main.py
+```
+
+#### Development Installation
+
+For developers who want to contribute or modify the game:
+
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+pip install -r requirements.txt
+
+# Or use the Makefile
+make dev-install
+```
+
+## Usage
+
+### Game Commands
 
 The game supports a wide range of commands, including:
 
-- Movement: `north`, `south`, `east`, `west`, etc.
-- Exploration: `look`, `map`, `motherboard`
-- Inventory: `inventory`, `take`, `drop`
-- Security: `scan`, `analyze`, `quarantine`
-- Information: `help`, `about`, `knowledge`
-- Educational: `visualize`, `simulate`
+- Movement: `north` (n), `south` (s), `east` (e), `west` (w), etc.
+- Exploration: `look` (l), `map` (m), `motherboard` (mb)
+- Inventory: `inventory` (i), `take` (t), `drop` (d)
+- Security: `scan` (s), `analyze` (a), `quarantine` (q)
+- Information: `help` (h), `about`, `knowledge` (k)
+- Educational: `visualize` (v), `simulate` (sim)
 
 Type `help` in-game for a complete list of commands.
 
-## Project Structure
+### Game Mechanics
+
+- **Exploration**: Navigate through the computer system using directional commands
+- **Knowledge**: Learn about computer components by visiting and interacting with them
+- **Security**: Find and neutralize viruses using scan, analyze, and quarantine commands
+- **Progression**: Track your progress with the knowledge and progress systems
+
+## For Developers
+
+### Project Structure
 
 The codebase follows a modular design with clear separation of concerns:
 
-- `computerquest/`: Main package
-  - `models/`: Data models (Component, Player)
-  - `world/`: World generation (Architecture)
-  - `mechanics/`: Game mechanics (Progress, Minigames)
-  - `utils/`: Utility functions
-- `data/`: Game data files
-- `tests/`: Unit tests for all modules
+```
+.
+├── computerquest/       # Main package
+│   ├── models/          # Data models (Component, Player)
+│   ├── world/           # World generation (Architecture)
+│   ├── mechanics/       # Game mechanics (Progress, Minigames)
+│   └── utils/           # Utility functions
+├── data/                # Game data files
+├── tests/               # Unit tests for all modules
+└── docs/                # Documentation
+```
 
-## Testing
+### Development Tools
 
-The project includes a comprehensive test suite to ensure all components function correctly.
+The project uses several tools to maintain code quality:
 
-### Running the Tests
+- **pytest**: For unit testing
+- **pytest-cov**: For test coverage reporting
+- **black**: For code formatting
+- **isort**: For import sorting
+- **pylint**: For code linting
+- **flake8**: For style checking
+- **mypy**: For static type checking
 
-To run all tests:
+### Running Tests
 
 ```bash
 # Run all tests
 python tests/run_tests.py
 
-# Run a specific test module
+# Run specific test modules
 python tests/run_tests.py component  # Tests the Component class
 python tests/run_tests.py player     # Tests the Player class
-python tests/run_tests.py commands   # Tests the Command pattern implementation
+
+# Generate coverage report
+python tests/run_tests.py --coverage
+
+# Or use the Makefile
+make test       # Run all tests
+make coverage   # Generate coverage report
 ```
 
-### Test Coverage
+### Code Quality
 
-The test suite covers:
-- Component and Player models
-- Command pattern implementation
-- Game controller logic
-- Progress tracking
-- World generation
-- Helper utilities
+```bash
+# Format code
+make format
+
+# Lint code
+make lint
+
+# Type check
+make typecheck
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Write tests for your changes
-4. Ensure all tests pass (`python tests/run_tests.py`)
-5. Commit your changes
-6. Push to the branch
-7. Open a Pull Request
+3. Install development dependencies (`make dev-install`)
+4. Write tests for your changes
+5. Format your code (`make format`)
+6. Ensure all tests pass (`make test`)
+7. Run linting checks (`make lint`)
+8. Ensure type checking passes (`make typecheck`)
+9. Commit your changes
+10. Push to the branch
+11. Open a Pull Request
+
+## Testing Strategy
+
+The project follows these testing principles:
+- **Test-Driven Development**: Write tests before implementing features
+- **Unit Tests**: Test individual components and functions
+- **Integration Tests**: Test interactions between components
+- **Comprehensive Coverage**: Aim for high test coverage across all modules
 
 ## License
 

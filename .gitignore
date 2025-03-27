@@ -97,3 +97,13 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Game-specific files
+input.txt
+output.txt
+saves/
+.pytest_cache/
+
+# IDE files
+.vscode/
+.idea/
