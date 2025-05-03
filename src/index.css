@@ -1,0 +1,126 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.terminal-container {
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  background-color: #1e1e1e;
+}
+
+.terminal {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  display: flex;
+  gap: 0.5rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  background-color: #4444dd;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #5555ff;
+}
+
+.map-container {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  width: 300px;
+  height: 300px;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #444;
+}
+
+.map-title {
+  padding: 0.5rem;
+  text-align: center;
+  background-color: #333;
+  border-bottom: 1px solid #444;
+}
+
+.map-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.reactflow-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.node {
+  padding: 10px;
+  border-radius: 5px;
+  width: 150px;
+  color: white;
+  text-align: center;
+  font-size: 12px;
+}
+
+.node.visited {
+  background-color: #1a7dff;
+}
+
+.node.current {
+  background-color: #ff7d1a;
+}
+
+.node.unvisited {
+  background-color: #444;
+}
+
+.edgePath path {
+  stroke: #888;
+  stroke-width: 2px;
+}

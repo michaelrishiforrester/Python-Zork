@@ -19,96 +19,67 @@ KodeKloud Computer Quest is an interactive text adventure where players navigate
 - Mini-games that demonstrate CPU pipelines and memory hierarchies
 - Save/load system to preserve progress
 - Enhanced UI with improved visuals and readability
+- Web-based terminal interface for running the game in a browser
 
-## UI Improvements
+## Web Interface Setup
 
-The interface has been updated with several visual improvements:
+The game now includes a web interface using TypeScript, React, ReactFlow, and Vite, allowing you to play the game directly in a browser.
 
-1. **Enhanced Box Formatting**
-   - Unicode box drawing characters for better-looking UI
-   - Consistent styling for all game sections
-   - Improved readability with clear section dividers
+### Prerequisites
 
-2. **Directional Information**
-   - ASCII Directional Compass showing available paths
-   - Improved formatting for direction names
-   - Clearer connections between components
+- Python 3.8 or higher
+- Node.js 14 or higher
+- npm or yarn
 
-3. **Clearer Structure & Organization**
-   - Better section separation with themed headers
-   - Aligned component lists with bullet points
-   - Improved status display
-
-4. **Progress Visualization**
-   - Progress bars for virus discovery and quarantine
-   - Knowledge level indicators with visual meters
-   - Overall progress tracking
-
-5. **Command Shortcuts Reference**
-   - Quick reference for command shortcuts
-   - Movement shortcuts clearly displayed
-   - One-letter shortcuts for common actions
-
-6. **Status Line**
-   - Current health and inventory capacity
-   - Virus discovery and quarantine progress
-   - Available command shortcuts
-
-## Quick Start
+### Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/kodekloud-computer-quest.git
 cd kodekloud-computer-quest
 
-# Optional: Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install the game
-pip install -e .
-
-# Run the game
-python main.py
-```
-
-## Detailed Installation
-
-### Prerequisites
-
-- Python 3.8 or higher
-- pip (Python package installer)
-
-### Installation Options
-
-#### Basic Installation
-
-For end-users who just want to play the game:
-
-```bash
-# Install from the cloned repository
-pip install -e .
-
-# Run the game
-python main.py
-```
-
-#### Development Installation
-
-For developers who want to contribute or modify the game:
-
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
+# Install Python dependencies
 pip install -r requirements.txt
+pip install flask flask-socketio flask-cors
 
-# Or use the Makefile
-make dev-install
+# Install Node.js dependencies
+npm install
 ```
 
-## Usage
+### Running the Web Interface
 
-### Game Commands
+The web interface requires both a backend server and a frontend development server:
+
+```bash
+# Start the backend server (in one terminal)
+npm run api
+
+# Start the frontend development server (in another terminal)
+npm run dev
+```
+
+Then open your browser to http://localhost:5173 to play the game.
+
+### Building for Production
+
+```bash
+# Build the frontend
+npm run build
+
+# Serve the built files
+npm run serve
+```
+
+## Terminal-Only Mode
+
+You can still run the game directly in a terminal without the web interface:
+
+```bash
+# Run the game in terminal mode
+python main.py
+```
+
+## Game Commands
 
 The game supports a wide range of commands, including:
 
@@ -121,73 +92,42 @@ The game supports a wide range of commands, including:
 
 Type `help` in-game for a complete list of commands.
 
-### Game Mechanics
+## Project Structure
 
-- **Exploration**: Navigate through the computer system using directional commands
-- **Knowledge**: Learn about computer components by visiting and interacting with them
-- **Security**: Find and neutralize viruses using scan, analyze, and quarantine commands
-- **Progression**: Track your progress with the knowledge and progress systems
-
-## For Developers
-
-### Project Structure
-
-The codebase follows a modular design with clear separation of concerns:
+The project now includes both the original Python game and a web interface:
 
 ```
 .
-├── computerquest/       # Main package
+├── computerquest/       # Main Python package
 │   ├── models/          # Data models (Component, Player)
 │   ├── world/           # World generation (Architecture)
 │   ├── mechanics/       # Game mechanics (Progress, Minigames)
 │   └── utils/           # Utility functions
 ├── data/                # Game data files
-├── tests/               # Unit tests for all modules
-└── docs/                # Documentation
+├── tests/               # Unit tests for Python code
+├── src/                 # React frontend
+│   ├── components/      # React components
+│   └── ...              # Other frontend files
+├── server.py            # Flask backend for web interface
+├── main.py              # Entry point for terminal mode
+└── package.json         # Node.js dependencies and scripts
 ```
 
-### Development Tools
+## Web Interface Architecture
 
-The project uses several tools to maintain code quality:
+The web interface consists of:
 
-- **pytest**: For unit testing
-- **pytest-cov**: For test coverage reporting
-- **black**: For code formatting
-- **isort**: For import sorting
-- **pylint**: For code linting
-- **flake8**: For style checking
-- **mypy**: For static type checking
+1. **Backend**:
+   - Flask server with Socket.IO for real-time communication
+   - Runs the Python game in a PTY (pseudo-terminal)
+   - Streams game output to the frontend
+   - Processes user input and sends it to the game
 
-### Running Tests
-
-```bash
-# Run all tests
-python tests/run_tests.py
-
-# Run specific test modules
-python tests/run_tests.py component  # Tests the Component class
-python tests/run_tests.py player     # Tests the Player class
-
-# Generate coverage report
-python tests/run_tests.py --coverage
-
-# Or use the Makefile
-make test       # Run all tests
-make coverage   # Generate coverage report
-```
-
-### Code Quality
-
-```bash
-# Format code
-make format
-
-# Lint code
-make lint
-
-# Type check
-make typecheck
-```
+2. **Frontend**:
+   - React application with TypeScript
+   - xterm.js for terminal emulation
+   - ReactFlow for the interactive map visualization
+   - Socket.IO client for communication with the backend
 
 ## Contributing
 
@@ -195,23 +135,12 @@ Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Install development dependencies (`make dev-install`)
-4. Write tests for your changes
-5. Format your code (`make format`)
-6. Ensure all tests pass (`make test`)
-7. Run linting checks (`make lint`)
-8. Ensure type checking passes (`make typecheck`)
-9. Commit your changes
-10. Push to the branch
-11. Open a Pull Request
-
-## Testing Strategy
-
-The project follows these testing principles:
-- **Test-Driven Development**: Write tests before implementing features
-- **Unit Tests**: Test individual components and functions
-- **Integration Tests**: Test interactions between components
-- **Comprehensive Coverage**: Aim for high test coverage across all modules
+3. Install all dependencies
+4. Make your changes
+5. Test your changes thoroughly
+6. Commit your changes
+7. Push to the branch
+8. Open a Pull Request
 
 ## License
 
